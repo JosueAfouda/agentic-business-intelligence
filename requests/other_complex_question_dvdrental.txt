@@ -1,0 +1,1 @@
+Sur les 24 derniers mois d’activité, quels sont les clients appartenant au top 10 % de chiffre d’affaires cumulé, dont la régularité de location est supérieure à la médiane, qui louent majoritairement des films à forte rotation, et dont la performance de retour (retards pondérés par la durée du film) est meilleure que celle de leur magasin de rattachement ?

@@ -1,1 +1,0 @@
-Répertoriez tous les paiements clients en indiquant le nom du client, le membre du personnel ayant traité le paiement, le montant et la date du paiement, classés par date de paiement.

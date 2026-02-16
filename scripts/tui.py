@@ -5,9 +5,10 @@ import csv
 import json
 from pathlib import Path
 
-# Configuration des chemins (alignée sur les scripts existants)
+# Configuration des chemins
 REQUESTS_DIR = Path("requests")
 SQL_DIR = Path("sql")
+DATAVIZ_DIR = Path("dataviz")
 SCHEMA_FILE = Path("schema/dvdrental_schema.md")
 OUTPUTS_DIR = Path("outputs")
 
@@ -32,14 +33,13 @@ def ask_yes_no(prompt):
             return False
         print("Veuillez répondre par 'Oui' ou 'Non'.")
 
-def run_script(module_name):
-    """Exécute un script existant en tant que module Python."""
+def run_step(cmd_args):
+    """Exécute une commande de workflow et gère les erreurs."""
     try:
-        # On utilise sys.executable pour garantir l'utilisation du même interpréteur (venv etc.)
-        subprocess.run([sys.executable, "-m", f"scripts.{module_name}"], check=True, capture_output=True)
+        subprocess.run(cmd_args, check=True, capture_output=True)
         return True
     except subprocess.CalledProcessError as e:
-        print(f"[ERREUR] Une erreur est survenue lors de l'exécution de {module_name} :")
+        print(f"[ERREUR] Une erreur est survenue lors de l'exécution :")
         print(e.stderr.decode())
         return False
 
@@ -57,7 +57,6 @@ def display_csv_table(csv_path, limit=5):
                 print("Le fichier CSV est vide.")
                 return
 
-            # Calcul des largeurs de colonnes (simplifié)
             rows = []
             for _ in range(limit):
                 try:
@@ -65,18 +64,14 @@ def display_csv_table(csv_path, limit=5):
                 except StopIteration:
                     break
 
-            # On affiche une grille simple
             all_data = [header] + rows
-            # Largeur max par colonne
             widths = [max(len(str(item)) for item in col) for col in zip(*all_data)]
             
             separator = "+" + "+".join("-" * (w + 2) for w in widths) + "+"
             
             print(separator)
-            # Header
             print("| " + " | ".join(str(item).ljust(widths[i]) for i, item in enumerate(header)) + " |")
             print(separator)
-            # Rows
             for row in rows:
                 print("| " + " | ".join(str(item).ljust(widths[i]) for i, item in enumerate(row)) + " |")
             print(separator)
@@ -98,7 +93,7 @@ def main():
         SCHEMA_FILE.unlink()
     
     print("Régénération du schéma de la base de données...")
-    if run_script("schema"):
+    if run_step([sys.executable, "-m", "scripts.schema"]):
         print("Le schéma de la base dvdrental a été régénéré avec succès.")
     else:
         print("Échec de la régénération du schéma. Fin du programme.")
@@ -130,8 +125,8 @@ def main():
     
     # 6. Génération SQL
     print("Génération du code SQL en cours...")
-    if run_script("generate_sql"):
-        sql_file = SQL_DIR / f"{question_name}.sql"
+    sql_file = SQL_DIR / f"{question_name}.sql"
+    if run_step([sys.executable, "scripts/generate_sql.py", "--request", str(request_file)]):
         if sql_file.exists():
             print(f"Code SQL généré avec succès.")
             print(f"Chemin : {sql_file}")
@@ -150,31 +145,53 @@ def main():
         return
 
     print("Exécution de l'analyse...")
-    if run_script("run_analysis"):
+    if run_step([sys.executable, "-m", "scripts.run_analysis", "--sql", str(sql_file)]):
         out_dir = OUTPUTS_DIR / question_name
         csv_path = out_dir / f"{question_name}.csv"
         meta_path = out_dir / "metadata.json"
 
         if csv_path.exists() and meta_path.exists():
             print(f"Analyse terminée.")
-            print(f"Fichier CSV : {csv_path}")
-            print(f"Fichier Metadata : {meta_path}")
-
             print("Aperçu des résultats (5 premières lignes) :")
             display_csv_table(csv_path)
 
             print("Contenu du fichier metadata.json :")
             print(meta_path.read_text(encoding='utf-8'))
-            
-            print("Analyse terminée avec succès.")
         else:
             print("[ERREUR] Les fichiers de sortie n'ont pas été générés.")
+            return
     else:
         print("[ERREUR] Échec de l'exécution de l'analyse.")
+        return
+
+    # 8. Génération Dataviz
+    print("Génération du script de visualisation...")
+    if run_step([sys.executable, "-m", "scripts.generate_dataviz", "--request", str(request_file)]):
+        dataviz_file = DATAVIZ_DIR / f"{question_name}.py"
+        if dataviz_file.exists():
+            print(f"Code dataviz généré : {dataviz_file}")
+        else:
+            print("[ERREUR] Le fichier dataviz n'a pas été généré.")
+            return
+    else:
+        return
+
+    # 9. Exécution Dataviz
+    print("Génération du graphique interactif...")
+    if run_step([sys.executable, "-m", "scripts.run_dataviz", "--dataviz", str(dataviz_file)]):
+        html_path = OUTPUTS_DIR / question_name / f"{question_name}.html"
+        if html_path.exists():
+            print(f"\n[OK] Visualisation terminée avec succès !")
+            print(f"Le rapport HTML est disponible ici : {html_path}")
+            print("Vous pouvez l'ouvrir manuellement dans votre navigateur préféré.")
+        else:
+            print("[ERREUR] Le fichier HTML final est introuvable.")
+    else:
+        return
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("Programme interrompu par l'utilisateur. Au revoir !")
+        print("\nProgramme interrompu par l'utilisateur. Au revoir !")
         sys.exit(0)

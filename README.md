@@ -1,223 +1,105 @@
-# Agent-centric Business Intelligence Workflow
+# Workflow BI Centré-Agent (Agent-centric BI)
 
 ![](agent_bi.png)
+
+Ce projet implémente un workflow de Business Intelligence (BI) piloté par l'IA (Gemini CLI), transformant des questions métier en langage naturel en analyses de données exploitables et visualisations interactives.
 
 ---
 
 ## 1️⃣ État actuel de la solution
 
-### ✅ Fonctionnalités déjà implémentées
+### ✅ Architecture et Orchestration
 
-1. **Workflow Agent-Centric BI**
+La solution repose sur une architecture modulaire où chaque étape est déterministe. L'orchestration est assurée par une interface texte (TUI) ou par des appels CLI explicites.
 
-   * Les questions métiers sont déposées dans `requests/*.txt`.
-   * Gemini CLI transforme l’intention métier + schéma en SQL auditable.
-   * Le SQL est exécuté directement sur la base de données (PostgreSQL pour l’instant).
-   * Les résultats sont exportés dans `outputs/<question_name>/<question_name>.csv` avec `metadata.json` pour traçabilité.
+1. **Orchestration via TUI (`scripts/tui.py`)** :
+   * Centralise le workflow : de la saisie de la question à la génération du rapport HTML final.
+   * Gère la régénération du schéma et le nommage des fichiers pour assurer la cohérence.
 
-2. **Gestion incremental-safe**
+2. **Workflow Déterministe (Pipeline)** :
+   * **Intention** : Les questions sont stockées dans `requests/*.txt`.
+   * **SQL** : `generate_sql.py` transforme l'intention en SQL auditable via Gemini.
+   * **Analyse** : `run_analysis.py` exécute le SQL et exporte les résultats dans `outputs/` (CSV + Metadata).
+   * **Visualisation** : `generate_dataviz.py` crée un script Plotly, et `run_dataviz.py` génère le rapport HTML final.
 
-   * `generate_sql.py` ne régénère que les nouvelles questions.
-   * `run_analysis.py` n’exécute que les SQL dont les CSV n’existent pas encore.
-   * Cela permet un workflow répétable et “batch-friendly” sans écrasement involontaire.
+3. **Exécution Contrôlée (Single-File Processing)** :
+   * Chaque script traite désormais **un seul fichier spécifique** via des arguments CLI explicites (`--request`, `--sql`, etc.).
+   * Fin de l'itération automatique sur les dossiers pour une sécurité et une traçabilité accrues.
 
-3. **Schéma de base automatisé**
-
-   * `schema.py` produit un fichier `schema/dvdrental_schema.md` avec :
-
-     * tables physiques (`BASE TABLE`)
-     * colonnes, types et contraintes (PK/FK)
-   * L’agent dispose d’une vue complète et fiable du schéma pour générer des requêtes correctes.
-
-4. **Nettoyage du SQL pour psycopg2**
-
-   * Suppression des backticks Markdown
-   * Conversion des commentaires multi-lignes `/* */` en `--`
-   * Assure l’exécution directe du SQL via Python.
-
-5. **Logs clairs et auditables**
-
-   * `[OK]` pour les nouvelles exécutions
-   * `[SKIP]` pour les fichiers déjà traités
-   * Fichiers CSV et `metadata.json` garantissent traçabilité et reproductibilité.
+4. **Schéma Automatisé** :
+   * `schema.py` produit un contexte fiable de la base de données dans `schema/dvdrental_schema.md`.
 
 ---
 
-## 2️⃣ Avantages actuels de la solution
+## 2️⃣ Utilisation
 
-### 🎯 Pour l’entreprise
+### Mode Recommandé (TUI)
+L'interface interactive guide l'utilisateur à travers toutes les étapes :
+```bash
+python3 scripts/tui.py
+```
 
-* **Autonomie** : plus besoin de Power BI/Tableau pour la production de rapports SQL simples à complexes.
-* **Coût réduit** : utilise PostgreSQL (ou autres SGBDR gratuits) + Agents IA gratuits.
-* **Versioning et auditabilité** : chaque question et résultat est versionné et traceable.
-* **Rapid iteration** : nouvelle question → génération automatique SQL → CSV exploitable.
-* **Transparence** : SQL lisible et auditable, pas de “boîte noire” comme certains outils SaaS.
+### Mode Expert (CLI)
+Pour un contrôle granulaire ou une intégration CI/CD, utilisez les scripts comme modules Python :
 
-### 🚀 Pour la technique / workflow
+```bash
+# 1. Générer le SQL
+python3 -m scripts.generate_sql --request requests/ma_question.txt
 
-* Pipeline **100% text-based / agent-driven**.
-* Compatible avec **plusieurs questions en batch**.
-* Base solide pour ajout de couches supplémentaires : insights narratifs, alerting, scoring.
+# 2. Exécuter l'analyse
+python3 -m scripts.run_analysis --sql sql/ma_question.sql
 
----
+# 3. Générer le code de visualisation
+python3 -m scripts.generate_dataviz --request requests/ma_question.txt
 
-## 3️⃣ Limites actuelles / points d’amélioration
-
-1. **Multi-SGBDR**
-
-   * PostgreSQL est déjà implémenté.
-   * Pour MySQL / SQL Server :
-
-     * Adapter `db_utils.py` pour chaque driver (`mysql-connector-python`, `pyodbc`).
-     * Adapter `schema.py` pour la syntaxe `information_schema` spécifique.
-     * Adapter le template Gemini pour tenir compte des particularités syntaxiques (ex : `LIMIT` vs `TOP`, concaténation de chaînes).
-
-2. **Gestion avancée des questions**
-
-   * Pour l’instant, pas de “update automatique” si la question change.
-   * Possible amélioration : hash du contenu `.txt` et comparaison avec `metadata.json`.
-
-3. **Analyse plus riche / narrative**
-
-   * Génération automatique d’insights ou de recommandations métiers à partir des CSV.
-   * Exemple : “Le top 10 clients représente 45% du chiffre d’affaires”.
-
-4. **Sécurité / access control**
-
-   * Pour usage entreprise, penser à :
-
-     * lecture seule sur DB
-     * journalisation des exécutions
-     * contrôle des inputs de Gemini pour éviter injection de code SQL malicieux.
-
-5. **Standardisation et réutilisabilité**
-
-   * Créer un template SQL “clean & safe” pour tout SGBDR.
-   * Option : un seul projet avec un **adapter layer** pour PostgreSQL/MySQL/SQL Server.
-
-6. **Scalabilité**
-
-   * Pour de grandes bases ou plusieurs questions simultanées, prévoir :
-
-     * parallélisation (multi-thread ou job queue)
-     * cache / stockage des résultats intermédiaires
+# 4. Produire le rapport HTML
+python3 -m scripts.run_dataviz --dataviz dataviz/ma_question.py
+```
 
 ---
 
-## 4️⃣ Opportunités stratégiques
+## 3️⃣ Avantages de la solution
 
-* **PME et startups** : ton outil offre un accès “professionnel” à la BI **sans licence payante**.
-* **Workflow Agent-Centric BI** : permet aux équipes non techniques de poser des questions métier directement à leurs données brutes.
-* **Extensible** : futur ajout de GPT / Gemini pour insights narratifs → décision rapide → alerting → tableau de bord minimaliste si besoin.
-* **Support multi-SGBDR** : pourrait devenir un **standard open-source pour BI autonome** sur bases locales (PostgreSQL, MySQL, SQL Server).
-
----
-
-## 5️⃣ Roadmap V2 / prochaines améliorations
-
-1. **Multi-SGBDR** : adapter utils et scripts pour MySQL et SQL Server
-2. **Insights narratifs** : générer un résumé texte à partir du CSV pour les décisions rapides
-3. **Mode batch multi-questions** avec logs consolidés
-4. **Interface minimaliste (optionnelle)** pour poser les questions via CLI ou web léger
-5. **Pipeline complet “Post-BI”** : intention → SQL → exécution → CSV → insight → alerting
+* **Contrôle Total** : Une commande = Un fichier traité. Pas d'exécution involontaire sur d'anciennes requêtes.
+* **Auditabilité** : Chaque étape produit un artefact tangible (SQL, CSV, JSON, HTML) consultable.
+* **Modularité** : Facile d'étendre à d'autres SGBDR (MySQL, etc.) en modifiant uniquement la couche `utils/`.
+* **Standardisation** : Utilisation des imports de modules Python (`-m`) pour une résolution propre des dépendances internes.
 
 ---
 
-💡 **Conclusion**
+## 4️⃣ Roadmap et Améliorations
 
-Tu as aujourd’hui un **outil BI agent-driven fonctionnel**, incrémental, traçable et gratuit pour petites et moyennes entreprises.
-Il permet de **remplacer Power BI/Tableau pour l’extraction et l’analyse directe des données**, tout en ouvrant la voie vers des **insights narratifs et décisionnels avancés**.
+1. **Multi-SGBDR** : Adaptateurs pour MySQL et SQL Server.
+2. **Insights Narratifs** : Génération d'un résumé textuel des découvertes à partir du CSV.
+3. **Validation SQL** : Ajout d'une étape de "dry-run" ou de linting SQL avant exécution.
+4. **Sécurité** : Renforcement du contrôle des inputs pour prévenir les injections SQL.
 
 ---
 
-## 1️⃣ Schéma ASCII (README friendly)
+## 5️⃣ Schéma de l'Orchestration
 
 ```
 ┌───────────────────┐
-│   Question métier │
-│   (NL text)       │
+│      TUI / CLI    │──▶ Orchestrateur central
 └─────────┬─────────┘
           │
           ▼
 ┌───────────────────┐
-│  generate_sql.py  │
-│ - Lit question    │
-│ - Lit schema      │
-│ - Appelle Gemini  │
-│ - Génère SQL      │
+│  generate_sql.py  │──▶ Produit sql/<nom>.sql
 └─────────┬─────────┘
           │
           ▼
 ┌───────────────────┐
-│   SQL généré      │
-│ (auditable, clean)│
+│  run_analysis.py  │──▶ Produit outputs/<nom>/<nom>.csv
 └─────────┬─────────┘
           │
           ▼
 ┌───────────────────┐
-│  run_analysis.py  │
-│ - Exécute SQL     │
-│ - Génère CSV      │
-│ - Génère metadata │
+│ generate_dataviz  │──▶ Produit dataviz/<nom>.py
 └─────────┬─────────┘
           │
           ▼
 ┌───────────────────┐
-│ Résultat exploitable│
-│ CSV + metadata     │
-└─────────┬─────────┘
-          │
-          ▼
-┌───────────────────┐
-│ Insights / Actions│
-│ - Analyse métrique│
-│ - Dashboard léger │
-│ - Alerting option │
+│   run_dataviz.py  │──▶ Produit outputs/<nom>/<nom>.html
 └───────────────────┘
 ```
-
----
-
-## 2️⃣ Schéma conceptuel pour image (Diagramme)
-
-**Flux logique de la solution :**
-
-1. **Question métier (NL)**
-
-   * déposée dans `requests/*.txt`
-   * “Quels sont les clients qui ont effectué les paiements totaux les plus élevés ?”
-
-2. **Génération SQL (Agent)**
-
-   * `generate_sql.py` + Gemini CLI
-   * Schéma DB comme contexte (`schema/dvdrental_schema.md`)
-   * Nettoyage SQL (`clean_sql`)
-   * Résultat : `sql/<question>.sql`
-
-3. **Exécution SQL**
-
-   * `run_analysis.py`
-   * Exécute uniquement les SQL non traités
-   * Génère `outputs/<question>/<question>.csv` + `metadata.json`
-
-4. **Résultat exploitable**
-
-   * CSV prêt à analyser ou visualiser
-   * Métadonnées pour audit / traçabilité
-
-5. **Optionnel : Insights narratifs / alerting**
-
-   * Génération automatique de commentaires / alertes métiers
-   * Possibilité de mini-dashboard léger ou export vers outil BI secondaire si besoin
-
----
-
-### 🟢 Key Points
-
-* Workflow **100% text-based** et **agent-driven**
-* **Incremental-safe** : anciens fichiers SQL ou CSV non écrasés
-* **Extensible** : multi-SGBDR (PostgreSQL / MySQL / SQL Server)
-* **Open-source-friendly** : idéal pour PME/startups avec budget limité
-
----
-

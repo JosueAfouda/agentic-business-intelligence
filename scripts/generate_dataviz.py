@@ -1,13 +1,13 @@
 import subprocess
 import csv
 import json
+import argparse
+import sys
 from pathlib import Path
 
-REQUESTS_DIR = Path("requests")
 SQL_DIR = Path("sql")
 OUTPUTS_DIR = Path("outputs")
 DATAVIZ_DIR = Path("dataviz")
-
 PROMPT_TEMPLATE = Path("scripts/prompt_template_dataviz.txt")
 
 def sanitize_python_output(text: str) -> str:
@@ -20,9 +20,7 @@ def sanitize_python_output(text: str) -> str:
         stripped = line.strip()
         if stripped.startswith(("import ", "from ", "def ", "class ")):
             return "\n".join(lines[i:])
-    return text  # fallback
-
-
+    return text
 
 def preview_csv(csv_path: Path, limit: int = 5):
     """Retourne un aperçu texte des premières lignes du CSV."""
@@ -41,7 +39,6 @@ def preview_csv(csv_path: Path, limit: int = 5):
 
     return header, rows, sum(1 for _ in open(csv_path, encoding="utf-8")) - 1
 
-
 def generate_dataviz(question_file: Path):
     question_name = question_file.stem
 
@@ -51,13 +48,9 @@ def generate_dataviz(question_file: Path):
     dataviz_file = DATAVIZ_DIR / f"{question_name}.py"
     output_html = OUTPUTS_DIR / question_name / f"{question_name}.html"
 
-    if dataviz_file.exists():
-        print(f"[SKIP] {dataviz_file} existe déjà, pas de génération")
-        return
-
     if not (sql_file.exists() and csv_file.exists() and metadata_file.exists()):
-        print(f"[SKIP] Données manquantes pour {question_name}, génération ignorée")
-        return
+        print(f"Erreur : Données manquantes pour {question_name} (SQL, CSV ou Metadata absent)")
+        sys.exit(1)
 
     # Lecture des fichiers
     question_text = question_file.read_text(encoding="utf-8")
@@ -86,17 +79,22 @@ def generate_dataviz(question_file: Path):
     )
 
     DATAVIZ_DIR.mkdir(exist_ok=True)
-    #dataviz_file.write_text(result.stdout, encoding="utf-8")
     clean_code = sanitize_python_output(result.stdout)
     dataviz_file.write_text(clean_code, encoding="utf-8")
 
     print(f"[OK] Code dataviz généré pour {question_name}")
 
-
 def main():
-    for q in REQUESTS_DIR.glob("*.txt"):
-        generate_dataviz(q)
+    parser = argparse.ArgumentParser(description="Génère un script de visualisation de données.")
+    parser.add_argument("--request", required=True, help="Chemin vers le fichier de requête .txt")
+    args = parser.parse_args()
 
+    request_file = Path(args.request)
+    if not request_file.exists():
+        print(f"Erreur : Le fichier {request_file} n'existe pas.")
+        sys.exit(1)
+
+    generate_dataviz(request_file)
 
 if __name__ == "__main__":
     main()

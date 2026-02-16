@@ -1,19 +1,15 @@
 import subprocess
+import argparse
+import sys
 from pathlib import Path
 
-REQUESTS_DIR = Path("requests")
 SQL_DIR = Path("sql")
 SCHEMA_FILE = Path("schema/dvdrental_schema.md")
-
 PROMPT_TEMPLATE = Path("scripts/prompt_template.txt")
 
 def generate_sql(question_file: Path):
     sql_file = SQL_DIR / (question_file.stem + ".sql")
     
-    if sql_file.exists():
-        print(f"[SKIP] {sql_file} existe déjà, pas de génération")
-        return
-
     # Lecture du prompt template
     prompt = PROMPT_TEMPLATE.read_text()
     prompt = prompt.replace("{{SCHEMA}}", SCHEMA_FILE.read_text())
@@ -33,8 +29,16 @@ def generate_sql(question_file: Path):
     print(f"[OK] SQL généré pour {question_file.name}")
 
 def main():
-    for q in REQUESTS_DIR.glob("*.txt"):
-        generate_sql(q)
+    parser = argparse.ArgumentParser(description="Génère du SQL à partir d'une requête en langage naturel.")
+    parser.add_argument("--request", required=True, help="Chemin vers le fichier de requête .txt")
+    args = parser.parse_args()
+
+    request_file = Path(args.request)
+    if not request_file.exists():
+        print(f"Erreur : Le fichier {request_file} n'existe pas.")
+        sys.exit(1)
+
+    generate_sql(request_file)
 
 if __name__ == "__main__":
     main()

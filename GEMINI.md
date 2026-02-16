@@ -1,101 +1,60 @@
-# Agentic Business Intelligence Workflow
+# GEMINI.md - Agent-centric Business Intelligence Workflow
 
-This project implements an AI-driven Business Intelligence (BI) workflow that transforms natural language business questions into executable SQL queries, runs them against a PostgreSQL database, and exports the results as CSV files and interactive data visualizations.
+This project implements an **Agent-centric Business Intelligence (BI)** workflow that leverages the Gemini CLI to transform natural language business questions into actionable insights. It automates the process of SQL generation, data extraction, and visualization.
 
 ## Project Overview
 
-The workflow uses Gemini to bridge the gap between business intent and technical execution. It is designed to be incremental, auditable, and easy to use for both developers and non-technical stakeholders.
+- **Purpose**: To provide a low-cost, transparent, and auditable BI solution for SMEs and startups, allowing non-technical users to query databases using natural language.
+- **Core Workflow**:
+    1.  **Question**: Users place `.txt` files in `requests/`.
+    2.  **Schema**: Database schema is extracted and stored in `schema/dvdrental_schema.md`.
+    3.  **SQL Generation**: `scripts/generate_sql.py` calls Gemini to generate SQL based on the question and schema.
+    4.  **Analysis**: `scripts/run_analysis.py` executes the SQL against a PostgreSQL database and exports results to `outputs/`.
+    5.  **Visualization**: `scripts/generate_dataviz.py` creates Plotly-based Python scripts in `dataviz/`, which are then executed by `scripts/run_dataviz.py` to produce HTML reports.
+- **Main Technologies**: Python 3, PostgreSQL, Gemini CLI, Pandas, Plotly Express, `psycopg2`.
 
-### Core Technologies
-- **LLM:** Gemini (via Gemini CLI)
-- **Database:** PostgreSQL (specifically optimized for `dvdrental` sample database)
-- **Language:** Python 3.10+
-- **Libraries:** `psycopg2-binary`, `pandas`, `python-dotenv`, `plotly-express`
-
----
-
-## Architecture & Workflow
-
-the pipeline follows a 5-step modular process:
-
-1.  **Schema Extraction:** `scripts/schema.py`
-    - Connects to the database and reads table structures, columns, and constraints.
-    - Generates `schema/dvdrental_schema.md` which serves as the context for Gemini.
-2.  **SQL Generation:** `scripts/generate_sql.py`
-    - Takes natural language questions from `requests/*.txt`.
-    - Uses `scripts/prompt_template.txt` to instruct Gemini to generate PostgreSQL-compatible SQL.
-    - Saves the generated SQL to `sql/*.sql`.
-3.  **Execution & Analysis:** `scripts/run_analysis.py`
-    - Executes the generated SQL against the database.
-    - Exports results to `outputs/<question_name>/<question_name>.csv`.
-    - Generates `metadata.json` for auditability.
-4.  **Dataviz Generation:** `scripts/generate_dataviz.py`
-    - Reads the CSV results and the original question.
-    - Instructs Gemini to write a Python script (using Plotly) for data visualization.
-    - Saves the script to `dataviz/<question_name>.py`.
-5.  **Dataviz Execution:** `scripts/run_dataviz.py`
-    - Runs the generated Python scripts to produce interactive HTML charts.
-    - Saves the HTML to `outputs/<question_name>/<question_name>.html`.
-
----
-
-## Setup and Configuration
+## Building and Running
 
 ### Prerequisites
 - Python 3.x installed.
-- Gemini CLI installed and configured.
-- A PostgreSQL database (e.g., `dvdrental`).
+- PostgreSQL database (e.g., the `dvdrental` sample database).
+- **Gemini CLI** installed and configured in your environment.
+- Environment variables set in a `.env` file:
+  ```env
+  DB_HOST=your_host
+  DB_PORT=5432
+  DB_NAME=dvdrental
+  DB_USER=your_user
+  DB_PASSWORD=your_password
+  ```
 
-### Installation
-```bash
-pip install -r requirements.txt
-```
+### Key Commands
+- **Install Dependencies**:
+  ```bash
+  pip install -r requirements.txt
+  ```
+- **Full Workflow (TUI)**:
+  ```bash
+  python scripts/tui.py
+  ```
+- **Individual Steps**:
+    - **Update Schema**: `python3 scripts/schema.py`
+    - **Generate SQL**: `python3 scripts/generate_sql.py`
+    - **Run Analysis**: `python3 scripts/run_analysis.py`
+    - **Generate Dataviz**: `python3 scripts/generate_dataviz.py`
+    - **Run Dataviz**: `python3 scripts/run_dataviz.py`
 
-### Environment Variables
-Create a `.env` file in the root directory:
-```env
-DB_HOST=your_host
-DB_PORT=5432
-DB_NAME=dvdrental
-DB_USER=your_user
-DB_PASSWORD=your_password
-```
-
----
-
-## Usage
-
-### Interactive TUI (Recommended)
-The project includes a Terminal User Interface to walk you through the entire process:
-```bash
-python scripts/tui.py
-```
-
-### Manual Execution (Step-by-Step)
-1. **Regenerate Schema:** `python scripts/schema.py`
-2. **Add Question:** Create a `.txt` file in `requests/`.
-3. **Generate SQL:** `python scripts/generate_sql.py`
-4. **Run Analysis:** `python scripts/run_analysis.py`
-5. **Generate Dataviz:** `python scripts/generate_dataviz.py`
-6. **Run Dataviz:** `python scripts/run_dataviz.py`
-
----
+## Directory Structure
+- `requests/`: Input natural language questions (`.txt`).
+- `sql/`: Generated SQL queries.
+- `schema/`: Database schema documentation.
+- `outputs/`: CSV results and `metadata.json` for each question.
+- `dataviz/`: Generated Python scripts for data visualization.
+- `scripts/`: Core execution logic and TUI.
+- `utils/`: Shared utilities (e.g., database connection).
 
 ## Development Conventions
-
-- **Incremental-Safe:** Scripts are designed to skip already processed files (e.g., won't regenerate SQL if it exists). To force regeneration, delete the target file in `sql/`, `outputs/`, or `dataviz/`.
-- **PostgreSQL Focus:** All logic and prompt templates are optimized for PostgreSQL syntax.
-- **SQL Sanitization:** The workflow includes logic to ensure SQL generated by Gemini is "clean" (removing markdown blocks and converting comments to `--`).
-- **Auditability:** Every output is paired with its originating SQL and metadata to ensure results can be verified.
-- **Modularity:** Database utilities are centralized in `utils/db_utils.py`.
-
----
-
-## Project Structure
-- `requests/`: Input natural language questions (.txt).
-- `sql/`: AI-generated PostgreSQL queries (.sql).
-- `outputs/`: Final results (CSV, HTML, metadata.json).
-- `schema/`: Database schema documentation used as context.
-- `scripts/`: Core automation and TUI scripts.
-- `dataviz/`: AI-generated Python scripts for Plotly visualizations.
-- `utils/`: Shared utilities for database connectivity.
+- **Incremental-Safe**: Scripts are designed to skip already processed items (e.g., won't regenerate SQL if it already exists) to prevent accidental overwrites and save tokens/time.
+- **Auditability**: Every step produces a tangible artifact (SQL file, CSV, metadata, HTML) for transparency.
+- **Modular Design**: Database logic is isolated in `utils/db_utils.py`, making it easier to extend to other SGBDRs (MySQL, SQL Server) in the future.
+- **Clean SQL**: The system expects clean SQL for direct execution via `psycopg2`.

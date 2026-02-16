@@ -1,0 +1,7 @@
+# Insights
+
+Le top 10 des clients affiche des dépenses totales comprises entre 162,67 $ et 211,55 $ sur la période étudiée. Eleanor Hunt et Karl Seal se détachent légèrement du groupe en étant les seuls à franchir le seuil des 200 $. L’écart entre le premier et le dixième rang est de 48,88 $, ce qui montre une certaine proximité de valeur entre ces profils de tête. La distribution est régulière, sans présence de valeur aberrante massive qui dominerait radicalement les autres contributeurs de ce classement. Cette analyse se limite toutefois aux dix meilleurs clients et ne permet pas d'évaluer leur poids relatif par rapport au chiffre d'affaires global.
+
+# Recommended Actions
+
+Mener une analyse complémentaire sur la fréquence d'achat de ces dix clients pour déterminer s'il s'agit d'une fidélité de long terme ou d'achats groupés exceptionnels. Envisager un dispositif de reconnaissance ou un programme de fidélité ciblé pour ce segment afin de sécuriser ces revenus à haute valeur. Calculer le montant moyen de paiement pour l'ensemble de la base de données afin de mesurer précisément l'écart de performance entre ces clients premium et le reste de la clientèle. Identifier les catégories de produits ou services privilégiées par ce top 10 pour affiner les stratégies de recommandation et de montée en gamme.

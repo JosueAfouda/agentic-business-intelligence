@@ -1,0 +1,7 @@
+# Insights
+
+L'analyse met en évidence cinq clients dont l'apport financier dans les catégories les plus populaires est particulièrement faible, malgré un comportement de retour exemplaire. Suzanne Nichols se distingue avec le chiffre d'affaires le plus bas (12,93), tandis que les quatre autres clients présentent des résultats plus homogènes, s'échelonnant entre 18,94 et 21,94. Ces profils représentent des clients "fiables" car peu enclins aux retards, mais dont l'activité sur les segments de produits les plus loués reste marginale. Le taux de retard d'Annie Russell (0,2778) est le plus performant de ce groupe, suggérant un profil de client rigoureux. La taille extrêmement réduite de cet échantillon limite toutefois la portée des conclusions à ces cinq cas isolés.
+
+# Recommended Actions
+
+Il est conseillé d'examiner si ces clients concentrent leurs locations sur des catégories de niche qui n'apparaissent pas dans cette sélection filtrée sur les "top catégories". Une action marketing ciblée, telle que l'envoi de recommandations personnalisées sur les nouveautés dans les catégories populaires, pourrait encourager ces clients à faible risque à augmenter leur volume de location. Enfin, il serait pertinent de vérifier la valeur totale (LTV) de ces comptes sur l'ensemble de leur historique pour confirmer si cette faible rentabilité sur la dernière année est une tendance de fond ou une anomalie passagère.

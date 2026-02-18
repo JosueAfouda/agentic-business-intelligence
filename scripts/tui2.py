@@ -4,7 +4,7 @@ import sys
 import csv
 import json
 from pathlib import Path
-from utils.db_discovery import list_databases
+from utils.db_discovery import list_databases, list_schemas
 
 # Configuration des chemins
 REQUESTS_DIR = Path("requests")
@@ -113,29 +113,51 @@ def main():
     selected_database = databases[selected_db_index]
     print(f"You have selected: {selected_database}")
 
+    # 3. Schema selection
+    print(f"Fetching available schemas for database '{selected_database}'...")
+    schemas = list_schemas(selected_database)
+    if not schemas:
+        print(f"Could not find any schemas in database '{selected_database}'.")
+        return
 
-    # 3. Régénération du schéma
-    print("Régénération du schéma de la base de données...")
-    if run_step(["scripts.schema", "--database", selected_database]):
-        print(f"Le schéma de la base {selected_database} a été régénéré avec succès.")
+    print("Please select a schema:")
+    for i, schema in enumerate(schemas):
+        print(f"  {i+1}. {schema}")
+
+    selected_schema_index = -1
+    while selected_schema_index < 0 or selected_schema_index >= len(schemas):
+        try:
+            choice = input(f"Enter the number of the schema (1-{len(schemas)}): ")
+            selected_schema_index = int(choice) - 1
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+    
+    selected_schema = schemas[selected_schema_index]
+    print(f"You have selected: {selected_schema}")
+
+
+    # 4. Régénération du schéma
+    print(f"Régénération du schéma '{selected_schema}' de la base '{selected_database}'...")
+    if run_step(["scripts.schema", "--database", selected_database, "--schema", selected_schema]):
+        print(f"Le schéma '{selected_schema}' de la base '{selected_database}' a été régénéré avec succès.")
     else:
         print("Échec de la régénération du schéma. Fin du programme.")
         return
 
-    # 4. Saisie de la question métier
+    # 5. Saisie de la question métier
     print("Renseignez votre question métier (soyez le plus clair et explicite possible) :")
     question_text = input("> ").strip()
     while not question_text:
         print("La question ne peut pas être vide.")
         question_text = input("> ").strip()
 
-    # 5. Nom de la question
+    # 6. Nom de la question
     print("Donnez un nom à votre question (sans espace, ce nom sera utilisé comme nom de fichier) :")
     question_name = input("> ").strip().replace(" ", "_")
     while not question_name:
         question_name = input("> ").strip().replace(" ", "_")
 
-    # 6. Création de la requête
+    # 7. Création de la requête
     REQUESTS_DIR.mkdir(exist_ok=True)
     request_file = REQUESTS_DIR / f"{question_name}.txt"
     
@@ -146,10 +168,10 @@ def main():
 
     request_file.write_text(question_text, encoding='utf-8')
     
-    # 7. Génération SQL
+    # 8. Génération SQL
     print("Génération du code SQL en cours...")
     sql_file = SQL_DIR / f"{question_name}.sql"
-    if run_step(["scripts.generate_sql", "--request", str(request_file), "--database", selected_database]):
+    if run_step(["scripts.generate_sql", "--request", str(request_file), "--database", selected_database, "--schema", selected_schema]):
         if sql_file.exists():
             print(f"Code SQL généré avec succès.")
             print(f"Chemin : {sql_file}")
@@ -162,13 +184,13 @@ def main():
     else:
         return
 
-    # 8. Validation et Exécution
+    # 9. Validation et Exécution
     if not ask_yes_no("Souhaitez-vous valider et exécuter cette requête SQL ?"):
         print("Requête non exécutée. Vous pouvez la retrouver dans le dossier /sql.")
         return
 
     print("Exécution de l'analyse...")
-    if run_step(["scripts.run_analysis", "--sql", str(sql_file), "--database", selected_database]):
+    if run_step(["scripts.run_analysis", "--sql", str(sql_file), "--database", selected_database, "--schema", selected_schema]):
         out_dir = OUTPUTS_DIR / question_name
         csv_path = out_dir / f"{question_name}.csv"
         meta_path = out_dir / "metadata.json"
@@ -187,7 +209,7 @@ def main():
         print("[ERREUR] Échec de l'exécution de l'analyse.")
         return
 
-    # 9. Génération Dataviz
+    # 10. Génération Dataviz
     print("Génération du script de visualisation...")
     dataviz_file = DATAVIZ_DIR / f"{question_name}.py"
     if run_step(["scripts.generate_dataviz", "--request", str(request_file)]):

@@ -15,12 +15,12 @@ def get_connection(database_name: str):
         password=os.getenv("DB_PASSWORD")
     )
 
-def run_query(sql: str, database_name: str):
+def run_query(sql: str, database_name: str, params: tuple = None):
     """Runs a SQL query on a specific database."""
     conn = get_connection(database_name)
     with conn:
         with conn.cursor() as cur:
-            cur.execute(sql)
+            cur.execute(sql, params)
             if cur.description:
                 rows = cur.fetchall()
                 columns = [desc[0] for desc in cur.description]

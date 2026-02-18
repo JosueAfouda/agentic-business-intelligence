@@ -1,124 +1,92 @@
-# Workflow BI Centré-Agent (Agent-centric BI)
+# Agentic Business Intelligence Engine (Docker)
 
-![](agent_bi.png)
+This document provides instructions for deploying and using the Agentic Business Intelligence Engine via Docker. This solution allows you to transform natural language business questions into actionable insights, visualizations, and strategic recommendations, without needing Python or Gemini CLI installed directly on your machine.
 
-Ce projet implémente un workflow de Business Intelligence (BI) piloté par l'IA (Gemini CLI), transformant des questions métier en langage naturel en analyses de données exploitables, visualisations interactives et recommandations stratégiques.
+## Overview
 
----
+The Agentic Business Intelligence Engine uses AI to interact with your PostgreSQL database, generating SQL queries, executing them, and producing interactive data visualizations and business insights. All within a self-contained Docker environment.
 
-## 1️⃣ État actuel de la solution
+## Prerequisites
 
-### ✅ Architecture et Orchestration
+To run this solution, you only need to have Docker installed on your system.
 
-La solution repose sur une architecture modulaire où chaque étape est déterministe. L'orchestration est assurée par une interface texte (TUI) ou par des appels CLI explicites.
+*   [Install Docker](https://docs.docker.com/get-docker/)
 
-1. **Orchestration via TUI (`scripts/tui2.py`)** :
-   * Centralise le workflow complet : de la sélection de la base et du **schéma** à la génération d'insights métiers.
-   * Gère la régénération du schéma ciblé et le nommage des fichiers pour assurer la cohérence.
+## Setup
 
-2. **Workflow Déterministe (Pipeline)** :
-   * **Intention** : Les questions sont stockées dans `requests/*.txt`.
-   * **Schéma** : `schema.py` extrait les métadonnées d'un schéma spécifique.
-   * **SQL** : `generate_sql.py` transforme l'intention en SQL auditable via Gemini en utilisant le contexte du schéma.
-   * **Analyse** : `run_analysis.py` exécute le SQL et exporte les résultats dans `outputs/` (CSV + Metadata).
-   * **Visualisation** : `generate_dataviz.py` et `run_dataviz.py` créent un rapport HTML interactif.
-   * **Insights & Actions** : `generate_insights_actions.py` analyse les résultats pour produire des recommandations métiers au format Markdown.
+1.  **Clone the Repository:**
+    ```bash
+    git clone https://github.com/your-repo/agentic-business-intelligence.git
+    cd agentic-business-intelligence
+    ```
+    *(Note: Replace `https://github.com/your-repo/agentic-business-intelligence.git` with the actual repository URL.)*
 
-3. **Exécution Contrôlée (Single-File Processing)** :
-   * Chaque script traite **un seul fichier spécifique** via des arguments CLI explicites.
-   * Support complet de l'argument `--schema` (par défaut : `public`).
+2.  **Create a `.env` file:**
+    Create a file named `.env` in the root directory of the project. This file will contain your PostgreSQL database connection details.
 
-4. **Schéma Automatisé** :
-   * `schema.py` produit un contexte fiable dans `schema/<database>__<schema>_schema.md`.
-   * Les tables sont référencées de manière qualifiée (`schema.table`) pour éviter toute ambiguïté.
+    **Example `.env` file:**
+    ```env
+    DB_HOST=your_db_host
+    DB_PORT=5432
+    DB_NAME=your_db_name
+    DB_USER=your_db_user
+    DB_PASSWORD=your_db_password
+    # Optional: Enable SSL for database connection (e.g., require, verify-full, disable)
+    # DB_SSLMODE=require
+    ```
+    Replace the placeholder values with your actual PostgreSQL database credentials.
 
----
+## Usage
 
-## 2️⃣ Utilisation
+All interactions with the Agentic Business Intelligence Engine are done through a single Docker command.
 
-### Mode Recommandé (TUI)
-L'interface interactive guide l'utilisateur à travers toutes les étapes, incluant la sélection de la base de données et du schéma :
+### 1. Running the Interactive TUI (Default)
+
+The primary way to use the engine is through its interactive Text User Interface (TUI). This will guide you through the entire workflow.
+
 ```bash
-python3 -m scripts.tui2
+docker compose run --rm agentic-bi
 ```
 
-### Mode Expert (CLI)
-Utilisez les scripts comme modules Python. L'argument `--schema` est optionnel (défaut: `public`).
+*   **First Run - Gemini Authentication:**
+    The very first time you run this command, the Gemini CLI embedded within the container will prompt you to authenticate with your Google account. Follow the instructions in your terminal to complete the OAuth login process. This authentication state will be securely persisted on your local machine across runs.
 
-```bash
-# 0. Générer le schéma (Exemple pour hr_analytics)
-python3 -m scripts.schema --database hr_analytics_db --schema hr_analytics
+*   **Subsequent Runs:**
+    On subsequent runs, if authentication is still valid, the TUI will launch directly, allowing you to select your database, schema, and input your business questions.
 
-# 1. Générer le SQL
-python3 -m scripts.generate_sql --request requests/ma_question.txt --database hr_analytics_db --schema hr_analytics
+### 2. Running CLI Commands
 
-# 2. Exécuter l'analyse
-python3 -m scripts.run_analysis --sql sql/ma_question.sql --database hr_analytics_db --schema hr_analytics
+You can also execute specific CLI commands within the container for more advanced use cases or automation. Simply append the desired command after `docker compose run --rm agentic-bi`.
 
-# 3. Générer le code de visualisation
-python3 -m scripts.generate_dataviz --request requests/ma_question.txt
+**Examples:**
 
-# 4. Produire le rapport HTML
-python3 -m scripts.run_dataviz --dataviz dataviz/ma_question.py
+*   **Get help for Gemini CLI:**
+    ```bash
+    docker compose run --rm agentic-bi gemini --help
+    ```
 
-# 5. Générer les Insights & Actions
-python3 -m scripts.generate_insights_actions --request requests/ma_question.txt
-```
+*   **Generate SQL for a specific request:**
+    ```bash
+    docker compose run --rm agentic-bi python3 -m scripts.generate_sql --request requests/my_question.txt --database my_db --schema public
+    ```
+    *(Note: Ensure `requests/my_question.txt` exists on your host machine in the `requests` directory.)*
+
+## Data Persistence
+
+All generated artifacts (SQL files, schema definitions, data visualizations, insights, and raw output data) as well as your Gemini authentication state are persisted to your local filesystem.
+
+*   **Application Data:**
+    *   `requests/` (input questions)
+    *   `sql/` (generated SQL queries)
+    *   `schema/` (database schema markdown)
+    *   `dataviz/` (generated Python visualization scripts)
+    *   `outputs/` (CSV data, HTML reports, Markdown insights)
+
+*   **Gemini Authentication:**
+    Your Gemini authentication tokens are stored persistently in a Docker volume, meaning you only need to authenticate once.
+
+## Security Note
+
+The application's source code is encapsulated within the Docker container and is not exposed to your host machine.
 
 ---
-
-## 3️⃣ Avantages de la solution
-
-* **Multi-Schéma** : Support explicite des schémas PostgreSQL avec isolation des contextes.
-* **Analyse Complète** : Va au-delà de la simple extraction de données en proposant des actions concrètes.
-* **Contrôle Total** : Une commande = Un fichier traité.
-* **Auditabilité** : Chaque étape produit un artefact tangible (SQL, CSV, JSON, HTML, MD).
-* **Standardisation** : Utilisation des imports de modules Python (`-m`).
-
----
-
-## 4️⃣ Roadmap et Améliorations
-
-1. **Multi-SGBDR** : Adaptateurs pour MySQL et SQL Server.
-2. **Validation SQL** : Ajout d'une étape de "dry-run" avant exécution.
-3. **Sécurité** : Renforcement du contrôle des inputs.
-
----
-
-## 5️⃣ Schéma de l'Orchestration
-
-```
-┌───────────────────┐
-│      TUI / CLI    │──▶ Orchestrateur central (Sélection DB + Schéma)
-└─────────┬─────────┘
-          │
-          ▼
-┌───────────────────┐
-│     schema.py     │──▶ Produit schema/<db>__<schema>_schema.md
-└─────────┬─────────┘
-          │
-          ▼
-┌───────────────────┐
-│  generate_sql.py  │──▶ Produit sql/<nom>.sql
-└─────────┬─────────┘
-          │
-          ▼
-┌───────────────────┐
-│  run_analysis.py  │──▶ Produit outputs/<nom>/<nom>.csv
-└─────────┬─────────┘
-          │
-          ▼
-┌───────────────────┐
-│ generate_dataviz  │──▶ Produit dataviz/<nom>.py
-└─────────┬─────────┘
-          │
-          ▼
-┌───────────────────┐
-│   run_dataviz.py  │──▶ Produit outputs/<nom>/<nom>.html
-└─────────┬─────────┘
-          │
-          ▼
-┌───────────────────┐
-│generate_insights  │──▶ Produit outputs/<nom>/<nom>.md
-└───────────────────┘
-```

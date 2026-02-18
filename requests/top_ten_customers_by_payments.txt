@@ -1,1 +1,0 @@
-Quels sont les 10 premiers clients qui ont effectué les paiements totaux les plus élevés sur toute la période des données ?

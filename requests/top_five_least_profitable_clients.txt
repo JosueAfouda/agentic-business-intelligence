@@ -1,1 +1,0 @@
-Quels sont les 5 clients les moins rentables sur la dernière année d’activité, en tenant compte uniquement des films appartenant aux catégories les plus louées, et pour lesquels le taux de retard moyen est inférieur à la moyenne globale des clients ?

@@ -1,0 +1,14 @@
+services:
+  agentic-bi:
+    build: .
+    env_file:
+      - ./.env
+    volumes:
+      - ./requests:/app/requests
+      - ./sql:/app/sql
+      - ./schema:/app/schema
+      - ./dataviz:/app/dataviz
+      - ./outputs:/app/outputs
+      - gemini-cli-config:/home/appuser/.config/@google-gemini-cli
+volumes:
+  gemini-cli-config:

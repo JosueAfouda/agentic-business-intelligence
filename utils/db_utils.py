@@ -5,14 +5,19 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def run_query(sql: str):
-    conn = psycopg2.connect(
+def get_connection(database_name: str):
+    """Establishes a connection to a specific database."""
+    return psycopg2.connect(
         host=os.getenv("DB_HOST"),
         port=os.getenv("DB_PORT"),
-        dbname=os.getenv("DB_NAME"),
+        dbname=database_name,
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD")
     )
+
+def run_query(sql: str, database_name: str):
+    """Runs a SQL query on a specific database."""
+    conn = get_connection(database_name)
     with conn:
         with conn.cursor() as cur:
             cur.execute(sql)

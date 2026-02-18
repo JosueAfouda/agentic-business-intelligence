@@ -1,9 +1,10 @@
+import argparse
 from utils.db_utils import run_query
 from pathlib import Path
 
-SCHEMA_PATH = Path("schema/dvdrental_schema.md")
+def generate_schema(database_name: str):
+    schema_path = Path(f"schema/{database_name}_schema.md")
 
-def generate_schema():
     queries = {
         "tables": """
             SELECT table_name
@@ -51,20 +52,24 @@ def generate_schema():
         """
     }
 
-    content = ["# Schéma de la base dvdrental\n"]
+    content = [f"# Schéma de la base {database_name}\n"]
     content.append(
         "_Note : seules les tables physiques (BASE TABLE) sont prises en compte. "
         "Les vues SQL sont volontairement exclues._\n"
     )
 
     for section, sql in queries.items():
-        _, rows = run_query(sql)
+        _, rows = run_query(sql, database_name)
         content.append(f"\n## {section.upper()}\n")
         for row in rows:
             content.append("- " + " | ".join(map(str, row)))
 
-    SCHEMA_PATH.parent.mkdir(exist_ok=True)
-    SCHEMA_PATH.write_text("\n".join(content))
+    schema_path.parent.mkdir(exist_ok=True)
+    schema_path.write_text("\n".join(content))
+    print(f"Schema for database '{database_name}' generated at {schema_path}")
 
 if __name__ == "__main__":
-    generate_schema()
+    parser = argparse.ArgumentParser(description="Generate schema for a given database.")
+    parser.add_argument("--database", required=True, help="The name of the database.")
+    args = parser.parse_args()
+    generate_schema(args.database)

@@ -4,12 +4,12 @@ import sys
 import csv
 import json
 from pathlib import Path
+from utils.db_discovery import list_databases
 
 # Configuration des chemins
 REQUESTS_DIR = Path("requests")
 SQL_DIR = Path("sql")
 DATAVIZ_DIR = Path("dataviz")
-SCHEMA_FILE = Path("schema/dvdrental_schema.md")
 OUTPUTS_DIR = Path("outputs")
 
 def clear_screen():
@@ -36,11 +36,14 @@ def ask_yes_no(prompt):
 def run_step(cmd_args):
     """Exécute une commande de workflow et gère les erreurs."""
     try:
-        subprocess.run(cmd_args, check=True, capture_output=True)
+        # Using sys.executable to ensure we use the same python interpreter
+        full_cmd = [sys.executable, "-m"] + cmd_args
+        process = subprocess.run(full_cmd, check=True, capture_output=True, text=True)
+        print(process.stdout)
         return True
     except subprocess.CalledProcessError as e:
         print(f"[ERREUR] Une erreur est survenue lors de l'exécution :")
-        print(e.stderr.decode())
+        print(e.stderr)
         return False
 
 def display_csv_table(csv_path, limit=5):
@@ -88,31 +91,51 @@ def main():
         print("Au revoir !")
         return
 
-    # 2. Régénération du schéma
-    if SCHEMA_FILE.exists():
-        SCHEMA_FILE.unlink()
+    # 2. Database selection
+    print("Fetching available databases...")
+    databases = list_databases()
+    if not databases:
+        print("Could not find any databases. Please check your connection settings.")
+        return
     
+    print("Please select a database:")
+    for i, db in enumerate(databases):
+        print(f"  {i+1}. {db}")
+
+    selected_db_index = -1
+    while selected_db_index < 0 or selected_db_index >= len(databases):
+        try:
+            choice = input(f"Enter the number of the database (1-{len(databases)}): ")
+            selected_db_index = int(choice) - 1
+        except ValueError:
+            print("Invalid input. Please enter a number.")
+    
+    selected_database = databases[selected_db_index]
+    print(f"You have selected: {selected_database}")
+
+
+    # 3. Régénération du schéma
     print("Régénération du schéma de la base de données...")
-    if run_step([sys.executable, "-m", "scripts.schema"]):
-        print("Le schéma de la base dvdrental a été régénéré avec succès.")
+    if run_step(["scripts.schema", "--database", selected_database]):
+        print(f"Le schéma de la base {selected_database} a été régénéré avec succès.")
     else:
         print("Échec de la régénération du schéma. Fin du programme.")
         return
 
-    # 3. Saisie de la question métier
+    # 4. Saisie de la question métier
     print("Renseignez votre question métier (soyez le plus clair et explicite possible) :")
     question_text = input("> ").strip()
     while not question_text:
         print("La question ne peut pas être vide.")
         question_text = input("> ").strip()
 
-    # 4. Nom de la question
+    # 5. Nom de la question
     print("Donnez un nom à votre question (sans espace, ce nom sera utilisé comme nom de fichier) :")
     question_name = input("> ").strip().replace(" ", "_")
     while not question_name:
         question_name = input("> ").strip().replace(" ", "_")
 
-    # 5. Création de la requête
+    # 6. Création de la requête
     REQUESTS_DIR.mkdir(exist_ok=True)
     request_file = REQUESTS_DIR / f"{question_name}.txt"
     
@@ -123,10 +146,10 @@ def main():
 
     request_file.write_text(question_text, encoding='utf-8')
     
-    # 6. Génération SQL
+    # 7. Génération SQL
     print("Génération du code SQL en cours...")
     sql_file = SQL_DIR / f"{question_name}.sql"
-    if run_step([sys.executable, "scripts/generate_sql.py", "--request", str(request_file)]):
+    if run_step(["scripts.generate_sql", "--request", str(request_file), "--database", selected_database]):
         if sql_file.exists():
             print(f"Code SQL généré avec succès.")
             print(f"Chemin : {sql_file}")
@@ -139,13 +162,13 @@ def main():
     else:
         return
 
-    # 7. Validation et Exécution
+    # 8. Validation et Exécution
     if not ask_yes_no("Souhaitez-vous valider et exécuter cette requête SQL ?"):
         print("Requête non exécutée. Vous pouvez la retrouver dans le dossier /sql.")
         return
 
     print("Exécution de l'analyse...")
-    if run_step([sys.executable, "-m", "scripts.run_analysis", "--sql", str(sql_file)]):
+    if run_step(["scripts.run_analysis", "--sql", str(sql_file), "--database", selected_database]):
         out_dir = OUTPUTS_DIR / question_name
         csv_path = out_dir / f"{question_name}.csv"
         meta_path = out_dir / "metadata.json"
@@ -164,10 +187,10 @@ def main():
         print("[ERREUR] Échec de l'exécution de l'analyse.")
         return
 
-    # 8. Génération Dataviz
+    # 9. Génération Dataviz
     print("Génération du script de visualisation...")
-    if run_step([sys.executable, "-m", "scripts.generate_dataviz", "--request", str(request_file)]):
-        dataviz_file = DATAVIZ_DIR / f"{question_name}.py"
+    dataviz_file = DATAVIZ_DIR / f"{question_name}.py"
+    if run_step(["scripts.generate_dataviz", "--request", str(request_file)]):
         if dataviz_file.exists():
             print(f"Code dataviz généré : {dataviz_file}")
         else:
@@ -176,9 +199,9 @@ def main():
     else:
         return
 
-    # 9. Exécution Dataviz
+    # 10. Exécution Dataviz
     print("Génération du graphique interactif...")
-    if run_step([sys.executable, "-m", "scripts.run_dataviz", "--dataviz", str(dataviz_file)]):
+    if run_step(["scripts.run_dataviz", "--dataviz", str(dataviz_file)]):
         html_path = OUTPUTS_DIR / question_name / f"{question_name}.html"
         if html_path.exists():
             print(f"[OK] Visualisation HTML générée : {html_path}")
@@ -188,9 +211,9 @@ def main():
     else:
         return
 
-    # 10. Génération Insights & Actions
+    # 11. Génération Insights & Actions
     print("Génération des Insights & Actions métiers...")
-    if run_step([sys.executable, "-m", "scripts.generate_insights_actions", "--request", str(request_file)]):
+    if run_step(["scripts.generate_insights_actions", "--request", str(request_file)]):
         md_path = OUTPUTS_DIR / question_name / f"{question_name}.md"
         if md_path.exists():
             print(f"[OK] Insights & Actions générés : {md_path}")
@@ -210,5 +233,5 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("Programme interrompu par l'utilisateur. Au revoir !")
+        print("\nProgramme interrompu par l'utilisateur. Au revoir !")
         sys.exit(0)

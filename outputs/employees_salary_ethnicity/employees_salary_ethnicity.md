@@ -1,7 +1,0 @@
-# Insights
-
-L'analyse des données révèle une prédominance marquée du groupe "White", qui constitue la majorité de l'effectif avec 860 employés. Ce groupe présente également le salaire moyen le plus élevé (115 316,93), suivi de très près par les employés "Native Hawaiian" (115 274,19), bien que ces derniers soient très peu nombreux (26). Un écart de rémunération de plus de 13 600 est visible entre le groupe le mieux rémunéré et la catégorie "Other", qui affiche la moyenne la plus basse. Les groupes "Asian or Asian American" et "Mixed or multiple ethnic groups" disposent d'effectifs importants mais se situent sous la moyenne de 110 000. La faible représentativité numérique de certaines ethnies, notamment pour les groupes comptant moins de 30 personnes, limite la portée statistique de leurs moyennes respectives.
-
-# Recommended Actions
-
-Effectuer une analyse croisée des salaires avec l'ancienneté et le niveau de responsabilité pour déterminer si les écarts constatés sont liés à la structure des postes. Mener un audit interne sur l'équité salariale, particulièrement pour les groupes "Other" et "Mixed or multiple ethnic groups" qui présentent les rémunérations les plus faibles. Approfondir l'étude des catégories à faible effectif pour s'assurer que les moyennes ne sont pas biaisées par des cas isolés. Renforcer les mécanismes de suivi des recrutements et des promotions pour garantir une représentation équilibrée à tous les niveaux de rémunération de l'organisation.

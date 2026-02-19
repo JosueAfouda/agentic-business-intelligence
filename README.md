@@ -1097,6 +1097,8 @@ Cela signifie :
 
 ## 👋 Qui suis-je ?
 
+<img width="1024" height="1536" alt="josue_coffe" src="https://github.com/user-attachments/assets/ae2eb112-f0d4-46c4-97cd-c67a3ec9714f" />
+
 Je m’appelle **Adégbola Josué Afouda**, Consultant Data & IA, avec une forte spécialisation en :
 
 * **Data Engineering**

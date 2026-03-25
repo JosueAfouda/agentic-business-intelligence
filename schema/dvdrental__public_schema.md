@@ -1,0 +1,225 @@
+# Schéma de la base dvdrental (Schema: public)
+
+_Note : seules les tables physiques (BASE TABLE) sont prises en compte. Les vues SQL sont volontairement exclues._
+
+
+## TABLES
+
+- public.actor
+- public.address
+- public.category
+- public.city
+- public.country
+- public.customer
+- public.film
+- public.film_actor
+- public.film_category
+- public.inventory
+- public.language
+- public.payment
+- public.rental
+- public.staff
+- public.store
+
+## COLUMNS
+
+- public.actor | actor_id | integer | NO
+- public.actor | first_name | character varying | NO
+- public.actor | last_name | character varying | NO
+- public.actor | last_update | timestamp without time zone | NO
+- public.address | address_id | integer | NO
+- public.address | address | character varying | NO
+- public.address | address2 | character varying | YES
+- public.address | district | character varying | NO
+- public.address | city_id | smallint | NO
+- public.address | postal_code | character varying | YES
+- public.address | phone | character varying | NO
+- public.address | last_update | timestamp without time zone | NO
+- public.category | category_id | integer | NO
+- public.category | name | character varying | NO
+- public.category | last_update | timestamp without time zone | NO
+- public.city | city_id | integer | NO
+- public.city | city | character varying | NO
+- public.city | country_id | smallint | NO
+- public.city | last_update | timestamp without time zone | NO
+- public.country | country_id | integer | NO
+- public.country | country | character varying | NO
+- public.country | last_update | timestamp without time zone | NO
+- public.customer | customer_id | integer | NO
+- public.customer | store_id | smallint | NO
+- public.customer | first_name | character varying | NO
+- public.customer | last_name | character varying | NO
+- public.customer | email | character varying | YES
+- public.customer | address_id | smallint | NO
+- public.customer | activebool | boolean | NO
+- public.customer | create_date | date | NO
+- public.customer | last_update | timestamp without time zone | YES
+- public.customer | active | integer | YES
+- public.film | film_id | integer | NO
+- public.film | title | character varying | NO
+- public.film | description | text | YES
+- public.film | release_year | integer | YES
+- public.film | language_id | smallint | NO
+- public.film | rental_duration | smallint | NO
+- public.film | rental_rate | numeric | NO
+- public.film | length | smallint | YES
+- public.film | replacement_cost | numeric | NO
+- public.film | rating | USER-DEFINED | YES
+- public.film | last_update | timestamp without time zone | NO
+- public.film | special_features | ARRAY | YES
+- public.film | fulltext | tsvector | NO
+- public.film_actor | actor_id | smallint | NO
+- public.film_actor | film_id | smallint | NO
+- public.film_actor | last_update | timestamp without time zone | NO
+- public.film_category | film_id | smallint | NO
+- public.film_category | category_id | smallint | NO
+- public.film_category | last_update | timestamp without time zone | NO
+- public.inventory | inventory_id | integer | NO
+- public.inventory | film_id | smallint | NO
+- public.inventory | store_id | smallint | NO
+- public.inventory | last_update | timestamp without time zone | NO
+- public.language | language_id | integer | NO
+- public.language | name | character | NO
+- public.language | last_update | timestamp without time zone | NO
+- public.payment | payment_id | integer | NO
+- public.payment | customer_id | smallint | NO
+- public.payment | staff_id | smallint | NO
+- public.payment | rental_id | integer | NO
+- public.payment | amount | numeric | NO
+- public.payment | payment_date | timestamp without time zone | NO
+- public.rental | rental_id | integer | NO
+- public.rental | rental_date | timestamp without time zone | NO
+- public.rental | inventory_id | integer | NO
+- public.rental | customer_id | smallint | NO
+- public.rental | return_date | timestamp without time zone | YES
+- public.rental | staff_id | smallint | NO
+- public.rental | last_update | timestamp without time zone | NO
+- public.staff | staff_id | integer | NO
+- public.staff | first_name | character varying | NO
+- public.staff | last_name | character varying | NO
+- public.staff | address_id | smallint | NO
+- public.staff | email | character varying | YES
+- public.staff | store_id | smallint | NO
+- public.staff | active | boolean | NO
+- public.staff | username | character varying | NO
+- public.staff | password | character varying | YES
+- public.staff | last_update | timestamp without time zone | NO
+- public.staff | picture | bytea | YES
+- public.store | store_id | integer | NO
+- public.store | manager_staff_id | smallint | NO
+- public.store | address_id | smallint | NO
+- public.store | last_update | timestamp without time zone | NO
+
+## CONSTRAINTS
+
+- public.actor | CHECK | None | None | None
+- public.actor | CHECK | None | None | None
+- public.actor | CHECK | None | None | None
+- public.actor | CHECK | None | None | None
+- public.actor | PRIMARY KEY | actor_id | public.actor | actor_id
+- public.address | CHECK | None | None | None
+- public.address | CHECK | None | None | None
+- public.address | CHECK | None | None | None
+- public.address | CHECK | None | None | None
+- public.address | CHECK | None | None | None
+- public.address | CHECK | None | None | None
+- public.address | FOREIGN KEY | city_id | public.city | city_id
+- public.address | PRIMARY KEY | address_id | public.address | address_id
+- public.category | CHECK | None | None | None
+- public.category | CHECK | None | None | None
+- public.category | CHECK | None | None | None
+- public.category | PRIMARY KEY | category_id | public.category | category_id
+- public.city | CHECK | None | None | None
+- public.city | CHECK | None | None | None
+- public.city | CHECK | None | None | None
+- public.city | CHECK | None | None | None
+- public.city | FOREIGN KEY | country_id | public.country | country_id
+- public.city | PRIMARY KEY | city_id | public.city | city_id
+- public.country | CHECK | None | None | None
+- public.country | CHECK | None | None | None
+- public.country | CHECK | None | None | None
+- public.country | PRIMARY KEY | country_id | public.country | country_id
+- public.customer | CHECK | None | None | None
+- public.customer | CHECK | None | None | None
+- public.customer | CHECK | None | None | None
+- public.customer | CHECK | None | None | None
+- public.customer | CHECK | None | None | None
+- public.customer | CHECK | None | None | None
+- public.customer | CHECK | None | None | None
+- public.customer | FOREIGN KEY | address_id | public.address | address_id
+- public.customer | PRIMARY KEY | customer_id | public.customer | customer_id
+- public.film | CHECK | None | None | None
+- public.film | CHECK | None | None | None
+- public.film | CHECK | None | None | None
+- public.film | CHECK | None | None | None
+- public.film | CHECK | None | None | None
+- public.film | CHECK | None | None | None
+- public.film | CHECK | None | None | None
+- public.film | CHECK | None | None | None
+- public.film | FOREIGN KEY | language_id | public.language | language_id
+- public.film | PRIMARY KEY | film_id | public.film | film_id
+- public.film_actor | CHECK | None | None | None
+- public.film_actor | CHECK | None | None | None
+- public.film_actor | CHECK | None | None | None
+- public.film_actor | FOREIGN KEY | actor_id | public.actor | actor_id
+- public.film_actor | FOREIGN KEY | film_id | public.film | film_id
+- public.film_actor | PRIMARY KEY | actor_id | public.film_actor | film_id
+- public.film_actor | PRIMARY KEY | film_id | public.film_actor | actor_id
+- public.film_actor | PRIMARY KEY | film_id | public.film_actor | film_id
+- public.film_actor | PRIMARY KEY | actor_id | public.film_actor | actor_id
+- public.film_category | CHECK | None | None | None
+- public.film_category | CHECK | None | None | None
+- public.film_category | CHECK | None | None | None
+- public.film_category | FOREIGN KEY | category_id | public.category | category_id
+- public.film_category | FOREIGN KEY | film_id | public.film | film_id
+- public.film_category | PRIMARY KEY | category_id | public.film_category | category_id
+- public.film_category | PRIMARY KEY | film_id | public.film_category | film_id
+- public.film_category | PRIMARY KEY | film_id | public.film_category | category_id
+- public.film_category | PRIMARY KEY | category_id | public.film_category | film_id
+- public.inventory | CHECK | None | None | None
+- public.inventory | CHECK | None | None | None
+- public.inventory | CHECK | None | None | None
+- public.inventory | CHECK | None | None | None
+- public.inventory | FOREIGN KEY | film_id | public.film | film_id
+- public.inventory | PRIMARY KEY | inventory_id | public.inventory | inventory_id
+- public.language | CHECK | None | None | None
+- public.language | CHECK | None | None | None
+- public.language | CHECK | None | None | None
+- public.language | PRIMARY KEY | language_id | public.language | language_id
+- public.payment | CHECK | None | None | None
+- public.payment | CHECK | None | None | None
+- public.payment | CHECK | None | None | None
+- public.payment | CHECK | None | None | None
+- public.payment | CHECK | None | None | None
+- public.payment | CHECK | None | None | None
+- public.payment | FOREIGN KEY | staff_id | public.staff | staff_id
+- public.payment | FOREIGN KEY | customer_id | public.customer | customer_id
+- public.payment | FOREIGN KEY | rental_id | public.rental | rental_id
+- public.payment | PRIMARY KEY | payment_id | public.payment | payment_id
+- public.rental | CHECK | None | None | None
+- public.rental | CHECK | None | None | None
+- public.rental | CHECK | None | None | None
+- public.rental | CHECK | None | None | None
+- public.rental | CHECK | None | None | None
+- public.rental | CHECK | None | None | None
+- public.rental | FOREIGN KEY | staff_id | public.staff | staff_id
+- public.rental | FOREIGN KEY | inventory_id | public.inventory | inventory_id
+- public.rental | FOREIGN KEY | customer_id | public.customer | customer_id
+- public.rental | PRIMARY KEY | rental_id | public.rental | rental_id
+- public.staff | CHECK | None | None | None
+- public.staff | CHECK | None | None | None
+- public.staff | CHECK | None | None | None
+- public.staff | CHECK | None | None | None
+- public.staff | CHECK | None | None | None
+- public.staff | CHECK | None | None | None
+- public.staff | CHECK | None | None | None
+- public.staff | CHECK | None | None | None
+- public.staff | FOREIGN KEY | address_id | public.address | address_id
+- public.staff | PRIMARY KEY | staff_id | public.staff | staff_id
+- public.store | CHECK | None | None | None
+- public.store | CHECK | None | None | None
+- public.store | CHECK | None | None | None
+- public.store | CHECK | None | None | None
+- public.store | FOREIGN KEY | manager_staff_id | public.staff | staff_id
+- public.store | FOREIGN KEY | address_id | public.address | address_id
+- public.store | PRIMARY KEY | store_id | public.store | store_id

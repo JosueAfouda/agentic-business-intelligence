@@ -33,6 +33,7 @@ class PipelineResult:
     question_text: str
     database_name: str
     schema_name: str
+    provider_name: str
     request_file: Path
     sql_file: Path
     csv_file: Path
@@ -102,6 +103,7 @@ def add_history_entry(result: PipelineResult) -> None:
             "question_text": result.question_text,
             "database_name": result.database_name,
             "schema_name": result.schema_name,
+            "provider_name": result.provider_name,
         },
     )
     st.session_state.history = history[:10]
@@ -151,6 +153,7 @@ def run_pipeline(
     requested_name: str,
     database_name: str,
     schema_name: str,
+    provider_name: str,
     overwrite_existing: bool,
 ) -> PipelineResult:
     question_name = build_question_name(question_text, requested_name, overwrite_existing)
@@ -164,16 +167,16 @@ def run_pipeline(
 
     logs: list[str] = []
     logs.append(capture_step("Schema generation", generate_schema, database_name, schema_name))
-    logs.append(capture_step("SQL generation", generate_sql, request_file, database_name, schema_name))
+    logs.append(capture_step("SQL generation", generate_sql, request_file, database_name, schema_name, provider_name))
     validate_file(sql_file, "SQL file")
     logs.append(capture_step("SQL execution", execute_analysis, sql_file, database_name, schema_name))
     validate_file(csv_file, "CSV output")
     validate_file(metadata_file, "Metadata file")
-    logs.append(capture_step("Dataviz generation", generate_dataviz, request_file))
+    logs.append(capture_step("Dataviz generation", generate_dataviz, request_file, provider_name))
     validate_file(dataviz_file, "Dataviz script")
     logs.append(capture_step("Dataviz execution", run_dataviz_script, dataviz_file))
     validate_file(html_file, "HTML chart")
-    logs.append(capture_step("Insights generation", generate_insights_actions, request_file))
+    logs.append(capture_step("Insights generation", generate_insights_actions, request_file, provider_name))
     validate_file(markdown_file, "Markdown report")
 
     return PipelineResult(
@@ -181,6 +184,7 @@ def run_pipeline(
         question_text=question_text.strip(),
         database_name=database_name,
         schema_name=schema_name,
+        provider_name=provider_name,
         request_file=request_file,
         sql_file=sql_file,
         csv_file=csv_file,
@@ -199,6 +203,7 @@ def result_from_history(entry: dict[str, str]) -> PipelineResult:
         question_text=entry["question_text"],
         database_name=entry["database_name"],
         schema_name=entry["schema_name"],
+        provider_name=entry.get("provider_name", "gemini"),
         request_file=REQUESTS_DIR / f"{question_name}.txt",
         sql_file=SQL_DIR / f"{question_name}.sql",
         csv_file=OUTPUTS_DIR / question_name / f"{question_name}.csv",
@@ -244,6 +249,7 @@ def render_result(result: PipelineResult) -> None:
         "assistant",
         (
             f"Pipeline executed on <strong>{result.database_name}.{result.schema_name}</strong>.<br>"
+            f"Requested provider: <strong>{result.provider_name}</strong>.<br>"
             f"Artifacts available in <code>outputs/{result.question_name}/</code>."
         ),
     )
@@ -339,8 +345,9 @@ def configure_page() -> None:
         <style>
         .stApp {
             background:
-                radial-gradient(circle at top right, rgba(16, 185, 129, 0.10), transparent 28%),
-                linear-gradient(180deg, #f5f1e8 0%, #fbfaf6 45%, #f3efe6 100%);
+                radial-gradient(circle at top right, rgba(22, 101, 52, 0.10), transparent 24%),
+                linear-gradient(180deg, #ebe4d5 0%, #f5f0e6 42%, #e8dfce 100%);
+            color: #1e2a22;
         }
         .block-container {
             padding-top: 2rem;
@@ -391,6 +398,109 @@ def configure_page() -> None:
             color: #1f2a22;
             border: 1px solid rgba(23, 63, 53, 0.15);
         }
+        div[data-baseweb="tab-list"] {
+            gap: 0.45rem;
+            background: rgba(255, 251, 244, 0.92);
+            border: 1px solid rgba(23, 63, 53, 0.14);
+            border-radius: 18px;
+            padding: 0.4rem;
+            margin: 1rem 0 0.85rem;
+            box-shadow: 0 10px 26px rgba(52, 43, 24, 0.06);
+        }
+        button[role="tab"] {
+            background: #efe5d1;
+            color: #233128;
+            border-radius: 12px;
+            border: 1px solid rgba(23, 63, 53, 0.10);
+            font-weight: 600;
+            padding: 0.55rem 0.9rem;
+        }
+        button[role="tab"]:hover {
+            background: #e3d6bc;
+            color: #17261d;
+        }
+        button[role="tab"][aria-selected="true"] {
+            background: #173f35;
+            color: #f7f7f4;
+            border-color: #173f35;
+        }
+        div[data-baseweb="tab-panel"] {
+            background: rgba(255, 252, 247, 0.96);
+            border: 1px solid rgba(23, 63, 53, 0.12);
+            border-radius: 20px;
+            padding: 1rem 1rem 1.15rem;
+            box-shadow: 0 18px 42px rgba(64, 55, 32, 0.08);
+        }
+        div[data-baseweb="tab-panel"] p,
+        div[data-baseweb="tab-panel"] li,
+        div[data-baseweb="tab-panel"] label,
+        div[data-baseweb="tab-panel"] span,
+        div[data-baseweb="tab-panel"] h1,
+        div[data-baseweb="tab-panel"] h2,
+        div[data-baseweb="tab-panel"] h3,
+        div[data-baseweb="tab-panel"] h4 {
+            color: #1f2a22;
+        }
+        div[data-baseweb="tab-panel"] div[data-testid="stMarkdownContainer"] {
+            color: #1f2a22;
+            line-height: 1.7;
+        }
+        div[data-baseweb="tab-panel"] div[data-testid="stMarkdownContainer"] a {
+            color: #14532d;
+        }
+        div[data-baseweb="tab-panel"] .stDownloadButton > button {
+            background: #ece4d4;
+            color: #1f2a22;
+            border: 1px solid rgba(23, 63, 53, 0.16);
+            border-radius: 12px;
+            font-weight: 600;
+        }
+        div[data-baseweb="tab-panel"] .stDownloadButton > button:hover {
+            background: #e0d5bf;
+            color: #17261d;
+            border-color: rgba(23, 63, 53, 0.28);
+        }
+        div[data-baseweb="tab-panel"] .stDownloadButton > button p,
+        div[data-baseweb="tab-panel"] .stDownloadButton > button span {
+            color: #1f2a22 !important;
+        }
+        div[data-baseweb="tab-panel"] div[data-testid="stCodeBlock"] {
+            border-radius: 16px;
+        }
+        div[data-baseweb="tab-panel"] div[data-testid="stCodeBlock"] pre,
+        div[data-baseweb="tab-panel"] div[data-testid="stCodeBlock"] code {
+            background: #f2ebde !important;
+            color: #1f2a22 !important;
+        }
+        div[data-baseweb="tab-panel"] div[data-testid="stCodeBlock"] pre {
+            padding-top: 1rem !important;
+            line-height: 1.55 !important;
+        }
+        div[data-baseweb="tab-panel"] div[data-testid="stCode"] {
+            background: #f2ebde !important;
+            border: 1px solid rgba(23, 63, 53, 0.10);
+            border-radius: 16px;
+        }
+        div[data-baseweb="tab-panel"] div[data-testid="stCode"] pre,
+        div[data-baseweb="tab-panel"] div[data-testid="stCode"] code,
+        div[data-baseweb="tab-panel"] div[data-testid="stCode"] span {
+            color: #1f2a22 !important;
+        }
+        div[data-baseweb="tab-panel"] div[data-testid="stJson"] {
+            background: #f7f2e8;
+            border: 1px solid rgba(23, 63, 53, 0.10);
+            border-radius: 16px;
+            padding: 0.35rem;
+        }
+        div[data-baseweb="tab-panel"] div[data-testid="stJson"] *,
+        div[data-baseweb="tab-panel"] div[data-testid="stJson"] span,
+        div[data-baseweb="tab-panel"] div[data-testid="stJson"] p {
+            color: #1f2a22 !important;
+        }
+        div[data-baseweb="tab-panel"] div[data-testid="stDataFrame"] {
+            border-radius: 16px;
+            overflow: hidden;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -430,13 +540,17 @@ def main() -> None:
             st.stop()
 
         schema_name = st.selectbox("Schema", schemas, index=0)
+        provider_name = st.selectbox("LLM Provider", ["gemini", "codex"], index=0)
         overwrite_existing = st.checkbox("Overwrite existing artifacts", value=False)
 
         st.divider()
         st.subheader("History")
         history = st.session_state.history
         if history:
-            labels = [f"{item['question_name']} [{item['database_name']}.{item['schema_name']}]" for item in history]
+            labels = [
+                f"{item['question_name']} [{item['database_name']}.{item['schema_name']}] ({item.get('provider_name', 'gemini')})"
+                for item in history
+            ]
             selected_label = st.selectbox(
                 "Previous runs",
                 options=["Current session result"] + labels,
@@ -451,7 +565,7 @@ def main() -> None:
             st.caption("No previous Streamlit runs in this session.")
 
         st.divider()
-        st.caption("Prerequisites: `.env` configured, PostgreSQL reachable, Gemini CLI installed.")
+        st.caption("Prerequisites: `.env` configured, PostgreSQL reachable, Gemini CLI or Codex CLI available.")
 
     with st.form("question_form", clear_on_submit=False):
         question_text = st.text_area(
@@ -477,6 +591,7 @@ def main() -> None:
                         requested_name=requested_name,
                         database_name=database_name,
                         schema_name=schema_name,
+                        provider_name=provider_name,
                         overwrite_existing=overwrite_existing,
                     )
                 st.session_state.last_result = result

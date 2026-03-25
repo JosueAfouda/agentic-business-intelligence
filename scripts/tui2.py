@@ -3,7 +3,12 @@ import subprocess
 import sys
 import csv
 import json
+import argparse
 from pathlib import Path
+
+if __package__ is None or __package__ == "":
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
+
 from utils.db_discovery import list_databases, list_schemas
 
 # Configuration des chemins
@@ -82,9 +87,12 @@ def display_csv_table(csv_path, limit=5):
     except Exception as e:
         print(f"Erreur lors de l'affichage du tableau : {e}")
 
-def main():
+def main(provider_name: str = "gemini"):
     clear_screen()
     print_banner()
+    if provider_name != "gemini":
+        print(f"LLM provider sélectionné : {provider_name}")
+        print()
 
     # 1. Démarrage
     if not ask_yes_no("Voulez-vous démarrer ?"):
@@ -171,7 +179,17 @@ def main():
     # 8. Génération SQL
     print("Génération du code SQL en cours...")
     sql_file = SQL_DIR / f"{question_name}.sql"
-    if run_step(["scripts.generate_sql", "--request", str(request_file), "--database", selected_database, "--schema", selected_schema]):
+    if run_step([
+        "scripts.generate_sql",
+        "--request",
+        str(request_file),
+        "--database",
+        selected_database,
+        "--schema",
+        selected_schema,
+        "--provider",
+        provider_name,
+    ]):
         if sql_file.exists():
             print(f"Code SQL généré avec succès.")
             print(f"Chemin : {sql_file}")
@@ -212,7 +230,7 @@ def main():
     # 10. Génération Dataviz
     print("Génération du script de visualisation...")
     dataviz_file = DATAVIZ_DIR / f"{question_name}.py"
-    if run_step(["scripts.generate_dataviz", "--request", str(request_file)]):
+    if run_step(["scripts.generate_dataviz", "--request", str(request_file), "--provider", provider_name]):
         if dataviz_file.exists():
             print(f"Code dataviz généré : {dataviz_file}")
         else:
@@ -235,7 +253,7 @@ def main():
 
     # 11. Génération Insights & Actions
     print("Génération des Insights & Actions métiers...")
-    if run_step(["scripts.generate_insights_actions", "--request", str(request_file)]):
+    if run_step(["scripts.generate_insights_actions", "--request", str(request_file), "--provider", provider_name]):
         md_path = OUTPUTS_DIR / question_name / f"{question_name}.md"
         if md_path.exists():
             print(f"[OK] Insights & Actions générés : {md_path}")
@@ -253,7 +271,16 @@ def main():
 
 if __name__ == "__main__":
     try:
-        main()
+        parser = argparse.ArgumentParser(description="Agentic BI workflow TUI.")
+        parser.add_argument(
+            "--provider",
+            type=str,
+            default="gemini",
+            choices=["gemini", "codex"],
+            help="LLM provider to use (default: gemini)",
+        )
+        args = parser.parse_args()
+        main(args.provider)
     except KeyboardInterrupt:
         print("\nProgramme interrompu par l'utilisateur. Au revoir !")
         sys.exit(0)

@@ -1,9 +1,13 @@
-import subprocess
 import csv
 import json
 import argparse
 import sys
 from pathlib import Path
+
+if __package__ is None or __package__ == "":
+    sys.path.append(str(Path(__file__).resolve().parents[1]))
+
+from llm.factory import generate_with_fallback
 
 OUTPUTS_DIR = Path("outputs")
 PROMPT_TEMPLATE = Path("scripts/prompt_template_insights.txt")
@@ -28,7 +32,7 @@ def preview_csv(csv_path: Path, limit: int = 10):
     return header, rows, total_rows
 
 
-def generate_insights_actions(question_file: Path):
+def generate_insights_actions(question_file: Path, provider_name: str = "gemini"):
     question_name = question_file.stem
 
     output_dir = OUTPUTS_DIR / question_name
@@ -73,24 +77,22 @@ def generate_insights_actions(question_file: Path):
     prompt = prompt.replace("{data_preview}", data_preview_text)
     prompt = prompt.replace("{sql_file_path}", metadata.get("sql_file", "N/A"))
 
-    # Call Gemini CLI
-    result = subprocess.run(
-        ["gemini", "run"],
-        input=prompt,
-        text=True,
-        capture_output=True
-    )
-
-    if result.returncode != 0:
-        print("Erreur lors de l'appel à Gemini :")
-        print(result.stderr)
+    # Call selected LLM provider
+    try:
+        result = generate_with_fallback(prompt, provider_name)
+    except Exception as exc:
+        print("Erreur lors de l'appel au provider LLM :")
+        print(exc)
         sys.exit(1)
 
     # Ensure output directory exists
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Save markdown output
-    output_md.write_text(result.stdout.strip(), encoding="utf-8")
+    output_md.write_text(result.text.strip(), encoding="utf-8")
+    if result.used_fallback:
+        print(f"[WARN] {result.fallback_reason}")
+        print("[WARN] Falling back to Gemini to preserve the workflow.")
 
     print(f"[OK] Insights & Actions générés : {output_md}")
 
@@ -104,6 +106,13 @@ def main():
         required=True,
         help="Chemin vers le fichier de requête .txt"
     )
+    parser.add_argument(
+        "--provider",
+        type=str,
+        default="gemini",
+        choices=["gemini", "codex"],
+        help="LLM provider to use (default: gemini)",
+    )
 
     args = parser.parse_args()
 
@@ -112,7 +121,7 @@ def main():
         print(f"Erreur : Le fichier {request_file} n'existe pas.")
         sys.exit(1)
 
-    generate_insights_actions(request_file)
+    generate_insights_actions(request_file, args.provider)
 
 
 if __name__ == "__main__":

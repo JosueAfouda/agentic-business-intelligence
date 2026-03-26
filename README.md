@@ -163,7 +163,7 @@ Ce projet est :
 * **Open-source** (licence MIT)
 * **Transparent** (SQL généré, données visibles)
 * **Orienté valeur métier**, pas “jolis dashboards”
-* **Pragmatique** : fonctionne en local, en CLI, en TUI ou via Docker
+* **Pragmatique** : fonctionne en local, en CLI, en TUI, via une interface web moderne (React + FastAPI) ou via Docker
 * **Évolutif** : conçu pour s’étendre à d’autres SGBDR et à un futur SaaS
 
 ---
@@ -230,14 +230,33 @@ La solution fonctionne aussi bien avec :
 
 ---
 
-### 3️⃣ Gemini CLI
+### 3️⃣ Gemini CLI / Codex CLI
 
-Le projet utilise **Gemini CLI** pour les Agents IA.
+Le projet supporte désormais **plusieurs providers LLM** :
 
-👉 Installation officielle :
+* **Gemini CLI** (provider par défaut)
+* **Codex** (provider optionnel)
+
+👉 Gemini CLI :
 [https://cloud.google.com/gemini/docs/gemini-cli](https://cloud.google.com/gemini/docs/gemini-cli)
 
-Une authentification Google (compte Gmail) est requise lors de la première utilisation.
+👉 Codex CLI :
+[https://github.com/openai/codex](https://github.com/openai/codex)
+
+> ℹ️ Si vous ne précisez aucun provider, **Gemini** reste utilisé par défaut afin de préserver le comportement historique du projet.
+
+---
+
+### 4️⃣ Node.js (uniquement pour l’interface web React)
+
+Si vous souhaitez utiliser l’interface web moderne du projet, installez également **Node.js 20+**.
+
+Vérification :
+
+```bash
+node --version
+npm --version
+```
 
 ---
 
@@ -314,9 +333,33 @@ agentic-business-intelligence/
 ├─ outputs/         # Résultats (CSV, HTML, Markdown)
 ├─ dataviz/         # Scripts Plotly générés
 ├─ scripts/         # Moteur BI & TUI
+├─ backend/         # API FastAPI pour l’interface web
+├─ frontend/        # Frontend React + Vite + Tailwind CSS
 ├─ utils/           # Connexion & découverte DB
 ├─ .env
 ```
+
+---
+
+## 🆕 Providers LLM supportés
+
+Le moteur IA du projet est désormais **multi-provider** :
+
+* `gemini` → provider par défaut
+* `codex` → provider alternatif
+
+Les scripts concernés acceptent un argument optionnel :
+
+```bash
+--provider gemini
+# ou
+--provider codex
+```
+
+Si cet argument n’est pas fourni :
+
+* le comportement reste inchangé
+* **Gemini** est utilisé automatiquement
 
 ---
 
@@ -328,6 +371,12 @@ Le **TUI** (Text User Interface) est la manière **la plus simple et la plus sû
 
 ```bash
 python -m scripts.tui2
+```
+
+Ou avec Codex :
+
+```bash
+python -m scripts.tui2 --provider codex
 ```
 
 Le TUI vous guidera pas à pas :
@@ -404,7 +453,8 @@ Quels sont les 5 films ayant généré le plus de revenus ?
 python -m scripts.generate_sql \
   --request requests/top_movies_by_revenue.txt \
   --database dvdrental \
-  --schema public
+  --schema public \
+  --provider codex
 ```
 
 ---
@@ -432,7 +482,8 @@ outputs/top_movies_by_revenue/
 
 ```bash
 python -m scripts.generate_dataviz \
-  --request requests/top_movies_by_revenue.txt
+  --request requests/top_movies_by_revenue.txt \
+  --provider codex
 ```
 
 ---
@@ -456,7 +507,8 @@ outputs/top_movies_by_revenue/top_movies_by_revenue.html
 
 ```bash
 python -m scripts.generate_insights_actions \
-  --request requests/top_movies_by_revenue.txt
+  --request requests/top_movies_by_revenue.txt \
+  --provider codex
 ```
 
 ➡️ Génère :
@@ -475,6 +527,61 @@ Pour une simple question métier, vous obtenez :
 * ✔️ Données CSV
 * ✔️ Graphique interactif (HTML)
 * ✔️ Insights & recommandations actionnables
+
+---
+
+# Interface web moderne : React + FastAPI
+
+En plus du CLI et du TUI, le projet dispose désormais d’une **application web complète** composée de :
+
+* un **backend FastAPI** qui orchestre le pipeline existant
+* un **frontend React / Vite / Tailwind CSS** qui consomme cette API
+
+Cette interface permet :
+
+* de sélectionner la base, le schéma et le provider
+* d’exécuter le pipeline complet depuis une UI moderne
+* d’afficher SQL, résultats, metadata, graphique HTML, rapport Markdown et logs
+* de télécharger les artefacts générés
+
+## Lancer l’application web en local
+
+### 1) Lancer le backend FastAPI
+
+Depuis la racine du projet :
+
+```bash
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 2) Lancer le frontend React
+
+Dans un second terminal :
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Le frontend est alors disponible sur :
+
+```text
+http://localhost:3000
+```
+
+> ℹ️ En développement local, Vite proxifie automatiquement les appels `/api` vers `http://127.0.0.1:8000`.
+
+## Endpoints principaux du backend
+
+Le backend expose notamment :
+
+* `GET /api/health`
+* `GET /api/config`
+* `GET /api/results`
+* `GET /api/results/{question_name}`
+* `POST /api/pipeline/run`
+* `GET /api/artifacts/{question_name}/{artifact_type}`
 
 ---
 
@@ -1221,4 +1328,3 @@ Si ce projet vous a :
 **Agentic Business Intelligence** est autant un projet technique qu’une vision de la Data de demain.
 
 Merci d’avoir pris le temps de le découvrir.
-

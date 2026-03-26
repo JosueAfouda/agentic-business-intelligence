@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 
 from backend.service import (
+    clear_history,
     PipelineServiceError,
     default_cors_origins,
     get_artifact_path,
@@ -69,6 +70,15 @@ def providers() -> dict:
 @app.get("/api/results")
 def results() -> dict:
     return {"history": list_available_results()}
+
+
+@app.delete("/history")
+@app.delete("/api/history")
+def delete_history() -> dict[str, str]:
+    try:
+        return clear_history()
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.get("/api/results/{question_name}")

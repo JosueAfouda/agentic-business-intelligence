@@ -3,7 +3,7 @@ import { Sidebar } from "./components/Sidebar";
 import { ChatArea } from "./components/ChatArea";
 import { PipelineInput } from "./components/PipelineInput";
 import { AppState } from "./types";
-import { fetchConfig, fetchHistory, fetchResult } from "./lib/api";
+import { clearHistory, fetchConfig, fetchHistory, fetchResult } from "./lib/api";
 
 export default function App() {
   const activeResultRequestRef = useRef<string | null>(null);
@@ -172,9 +172,25 @@ export default function App() {
     };
   }, [state.activeResultId, state.activeResult]);
 
+  const handleClearHistory = useCallback(async () => {
+    await clearHistory();
+    setState((prev) => ({
+      ...prev,
+      history: [],
+      activeResultId: null,
+      activeResult: null,
+      errorMessage: null,
+    }));
+  }, []);
+
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-900 overflow-hidden">
-      <Sidebar state={state} setState={setState} onRefresh={() => void refreshConfiguration(true)} />
+      <Sidebar
+        state={state}
+        setState={setState}
+        onRefresh={() => void refreshConfiguration(true)}
+        onClearHistory={() => void handleClearHistory()}
+      />
       <main className="flex-1 flex flex-col relative">
         <ChatArea state={state} />
         <PipelineInput state={state} setState={setState} />

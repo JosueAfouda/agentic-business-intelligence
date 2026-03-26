@@ -6,6 +6,7 @@ import io
 import json
 import os
 import re
+import shutil
 import time
 from pathlib import Path
 from typing import Any
@@ -297,6 +298,24 @@ def list_available_results() -> list[dict[str, Any]]:
             }
         )
     return results
+
+
+def clear_history() -> dict[str, str]:
+    for result in list_available_results():
+        question_name = result["questionName"]
+        request_file = REQUESTS_DIR / f"{question_name}.txt"
+        sql_file = SQL_DIR / f"{question_name}.sql"
+        dataviz_file = DATAVIZ_DIR / f"{question_name}.py"
+        output_dir = OUTPUTS_DIR / question_name
+
+        for file_path in (request_file, sql_file, dataviz_file):
+            if file_path.exists():
+                file_path.unlink()
+
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+
+    return {"status": "success", "message": "History cleared"}
 
 
 def get_config(database_name: str | None = None) -> dict[str, Any]:

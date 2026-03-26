@@ -1,5 +1,5 @@
-import React from "react";
-import { Database, LayoutTemplate, Cpu, RefreshCw, History, FileText, Settings2 } from "lucide-react";
+import React, { useState } from "react";
+import { Database, LayoutTemplate, Cpu, RefreshCw, History, FileText, Settings2, Trash2 } from "lucide-react";
 import { AppState } from "../types";
 import { cn } from "../lib/utils";
 
@@ -7,9 +7,35 @@ interface SidebarProps {
   state: AppState;
   setState: React.Dispatch<React.SetStateAction<AppState>>;
   onRefresh: () => void;
+  onClearHistory: () => Promise<void> | void;
 }
 
-export function Sidebar({ state, setState, onRefresh }: SidebarProps) {
+export function Sidebar({ state, setState, onRefresh, onClearHistory }: SidebarProps) {
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
+
+  const handleClearHistory = async () => {
+    if (state.history.length === 0 || isClearingHistory) {
+      return;
+    }
+
+    const confirmed = window.confirm("Are you sure you want to delete all history?");
+    if (!confirmed) {
+      return;
+    }
+
+    setIsClearingHistory(true);
+    try {
+      await onClearHistory();
+    } catch (error) {
+      setState((prev) => ({
+        ...prev,
+        errorMessage: error instanceof Error ? error.message : "Unable to clear history.",
+      }));
+    } finally {
+      setIsClearingHistory(false);
+    }
+  };
+
   return (
     <aside className="w-72 bg-white border-r border-slate-200 flex flex-col h-screen overflow-y-auto">
       <div className="p-5 border-b border-slate-100">
@@ -115,9 +141,26 @@ export function Sidebar({ state, setState, onRefresh }: SidebarProps) {
 
         {/* History Section */}
         <div className="space-y-4 mt-4">
-          <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-            <History className="w-3.5 h-3.5" /> History
-          </h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+              <History className="w-3.5 h-3.5" /> History
+            </h2>
+            <button
+              type="button"
+              onClick={() => void handleClearHistory()}
+              disabled={state.history.length === 0 || isClearingHistory || state.isBootstrapping}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[11px] font-semibold transition-colors",
+                state.history.length === 0 || isClearingHistory || state.isBootstrapping
+                  ? "cursor-not-allowed border-rose-100 bg-rose-50 text-rose-300"
+                  : "border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-300 hover:bg-rose-100"
+              )}
+              title={state.history.length === 0 ? "History is already empty" : "Delete all history"}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {isClearingHistory ? "Cleaning..." : "Clean History"}
+            </button>
+          </div>
           
           {state.history.length === 0 ? (
             <p className="text-sm text-slate-500 italic">No previous runs.</p>

@@ -1,38 +1,46 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-`scripts/` contains the pipeline entrypoints (`schema`, `generate_sql`, `run_analysis`, `generate_dataviz`, `run_dataviz`, `generate_insights_actions`, `tui2`). `utils/` holds PostgreSQL connection and discovery helpers. `requests/`, `sql/`, `schema/`, `dataviz/`, and `outputs/` store generated workflow artifacts; keep names aligned across these folders, for example `requests/top_movies.txt` -> `sql/top_movies.sql` -> `outputs/top_movies/`. Root files include `requirements.txt`, `Dockerfile`, `docker-compose.yml`, and [README.md](/home/vant/Documents/business/agentic-business-intelligence/README.md).
+The core BI pipeline lives in `scripts/` and is designed to be run as modules, for example `python -m scripts.tui2` or `python -m scripts.generate_sql`. Database helpers live in `utils/`. LLM provider adapters live in `llm/`. Generated workflow artifacts should stay aligned by business question across `requests/`, `sql/`, `schema/`, `dataviz/`, and `outputs/`:
+
+`requests/top_movies.txt` -> `sql/top_movies.sql` -> `outputs/top_movies/`
+
+The web stack is split between `backend/` for the FastAPI service and `frontend/` for the React + Vite UI. Root infrastructure files include `requirements.txt`, `Dockerfile`, `docker-compose.yml`, and `README.md`.
 
 ## Build, Test, and Development Commands
-Create a virtualenv and install dependencies:
+Create a local environment and install dependencies:
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
-Run the guided workflow:
+
+Run the recommended text workflow:
+
 ```bash
 python -m scripts.tui2
+python -m scripts.tui2 --provider codex
 ```
-Run the pipeline manually:
+
+Run individual pipeline stages when debugging:
+
 ```bash
 python -m scripts.schema --database dvdrental --schema public
 python -m scripts.generate_sql --request requests/top_movies.txt --database dvdrental --schema public
 python -m scripts.run_analysis --sql sql/top_movies.sql --database dvdrental --schema public
-python -m scripts.generate_dataviz --request requests/top_movies.txt
-python -m scripts.run_dataviz --dataviz dataviz/top_movies.py
-python -m scripts.generate_insights_actions --request requests/top_movies.txt
 ```
-Docker is available for the same TUI flow with `docker compose run --rm agentic-bi`.
+
+Use `docker compose run --rm agentic-bi` for a containerized run.
 
 ## Coding Style & Naming Conventions
-Use Python with 4-space indentation, `snake_case` for files, functions, and variables, and `Path`-based file handling where possible. Run scripts as modules (`python -m scripts.<name>`) rather than by file path. Follow existing conventions: small single-purpose modules, explicit CLI arguments, and business-readable artifact names such as `top_movies_by_revenue`.
+Use Python with 4-space indentation, `snake_case` for files, functions, and variables, and `Path`-based file handling where practical. Keep modules focused and CLI arguments explicit. Name generated artifacts with business-readable slugs such as `top_movies_by_revenue`. Follow the existing pattern of small scripts rather than large multi-purpose modules.
 
 ## Testing Guidelines
-There is no dedicated `tests/` suite yet. Validate changes with targeted smoke runs of the affected module and verify generated outputs under `outputs/<question_name>/`. For safe checks, prefer `python -m scripts.schema ...` and one end-to-end sample workflow before opening a PR.
+There is no dedicated `tests/` suite yet. Validate changes with targeted smoke runs of the affected script and at least one end-to-end sample flow when behavior changes. Check generated files under `outputs/<question_name>/` and confirm the matching SQL, CSV, HTML, or Markdown artifacts look correct.
 
 ## Commit & Pull Request Guidelines
-Recent history uses short, lowercase commit subjects such as `readme final` and `add choose schema option OK`. Keep commits focused, imperative, and concise; one logical change per commit. PRs should include the workflow or module touched, required `.env` or database assumptions, and sample output paths or screenshots when TUI/dataviz behavior changes.
+Recent history mixes short lowercase subjects (`readme final`) with concise feature-style messages (`feat: add Codex support alongside Gemini CLI`). Keep commits focused, imperative, and scoped to one logical change. PRs should state the workflow touched, required `.env` or database assumptions, and include sample output paths or screenshots for TUI or frontend changes.
 
 ## Security & Configuration Tips
-Keep credentials in a local `.env`; do not commit secrets or customer data exports. Generated CSV/HTML/Markdown files in `outputs/` may contain sensitive data, so sanitize examples before sharing them.
+Keep secrets in a local `.env` and never commit credentials or customer data. Treat files in `outputs/` as potentially sensitive and sanitize examples before sharing them externally.

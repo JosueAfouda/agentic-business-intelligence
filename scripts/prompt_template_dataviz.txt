@@ -97,6 +97,259 @@ Guidelines:
 
 ---
 
+## MANDATORY CHART TYPE SELECTION (STRICT)
+
+You MUST select the visualization type EXCLUSIVELY from the following list:
+
+* Stacked bar chart
+* Stacked column chart
+* Clustered bar chart
+* Clustered column chart
+* 100% Stacked bar chart
+* 100% Stacked column chart
+* Line chart
+* Area chart
+* Stacked area chart
+* 100% Stacked area chart
+* Line and stacked column chart
+* Line and clustered column chart
+* Ribbon chart
+* Waterfall chart
+* Funnel
+* Scatter plot
+* Pie chart
+* Donut chart
+* Treemap
+* Map
+* Filled map
+* Gauge
+* Card
+* Multi-row card
+
+### STRICT RULES
+
+* You MUST NOT invent or use any chart type outside this list.
+* You MUST map the selected chart type to an appropriate Plotly implementation.
+* If multiple chart types seem valid, choose the one that:
+
+  * maximizes clarity
+  * minimizes cognitive load
+  * best answers the business question
+
+### SELECTION LOGIC
+
+You MUST follow these guidelines:
+
+* Comparison across categories → Clustered bar chart or Clustered column chart
+* Composition → Stacked / 100% Stacked charts
+* Time series → Line chart or Area chart
+* Distribution → Scatter plot
+* Proportion → Pie chart or Donut chart (only if few categories)
+* Hierarchy → Treemap
+* Geographic data → Map or Filled map
+* Single KPI → Card
+* Multiple KPIs → Multi-row card
+* Sequential contribution → Waterfall chart
+* Conversion steps → Funnel
+
+### FALLBACK RULE
+
+If no chart clearly fits:
+→ Default to **Clustered column chart**
+
+---
+
+## CHART IMPLEMENTATION MAPPING (PLOTLY - STRICT)
+
+For each selected chart type, you MUST use the corresponding Plotly implementation below.
+
+---
+
+### BAR / COLUMN CHARTS
+
+**Clustered column chart**
+→ `plotly.express.bar`
+
+* x = category
+* y = value
+* color = optional grouping
+
+**Clustered bar chart**
+→ `plotly.express.bar`
+
+* orientation = 'h'
+
+---
+
+**Stacked column chart**
+→ `plotly.express.bar`
+
+* barmode = 'stack'
+
+**Stacked bar chart**
+→ `plotly.express.bar`
+
+* orientation = 'h'
+* barmode = 'stack'
+
+---
+
+**100% Stacked column chart**
+→ `plotly.express.bar`
+
+* barmode = 'relative'
+* normalize values to percentage
+
+**100% Stacked bar chart**
+→ same as above with orientation='h'
+
+---
+
+### LINE / AREA
+
+**Line chart**
+→ `plotly.express.line`
+
+* x = time or ordered dimension
+* y = value
+* color = optional grouping
+
+---
+
+**Area chart**
+→ `plotly.express.area`
+
+**Stacked area chart**
+→ `plotly.express.area`
+
+* multiple categories stacked
+
+**100% Stacked area chart**
+→ normalize values before plotting
+→ then `px.area`
+
+---
+
+### COMBO CHARTS
+
+**Line and clustered column chart**
+→ `plotly.graph_objects`
+
+* use `go.Bar` + `go.Scatter`
+
+**Line and stacked column chart**
+→ `plotly.graph_objects`
+
+* stacked bars + line overlay
+
+---
+
+### SPECIALIZED CHARTS
+
+**Scatter plot**
+→ `plotly.express.scatter`
+
+---
+
+**Pie chart**
+→ `plotly.express.pie`
+
+**Donut chart**
+→ `plotly.express.pie`
+
+* hole=0.4
+
+---
+
+**Treemap**
+→ `plotly.express.treemap`
+
+---
+
+**Waterfall chart**
+→ `plotly.graph_objects.Waterfall`
+
+---
+
+**Funnel**
+→ `plotly.express.funnel`
+
+---
+
+**Ribbon chart**
+→ NOT natively supported in Plotly
+→ approximate using:
+
+* `plotly.express.area` with ordering
+  OR
+* `plotly.graph_objects` with filled lines
+
+---
+
+### MAPS
+
+**Map**
+→ `plotly.express.scatter_mapbox`
+
+**Filled map**
+→ `plotly.express.choropleth`
+
+---
+
+### KPI / SUMMARY
+
+**Card**
+→ Use `plotly.graph_objects.Indicator`
+
+* mode = "number"
+
+---
+
+**Multi-row card**
+→ multiple `go.Indicator` in a subplot layout
+
+---
+
+### GAUGE
+
+**Gauge**
+→ `plotly.graph_objects.Indicator`
+
+* mode = "gauge+number"
+
+---
+
+## IMPLEMENTATION RULES (STRICT)
+
+* You MUST strictly follow the mapping above
+* You MUST NOT use unsupported chart types
+* You MUST choose between:
+
+  * plotly.express (preferred)
+  * plotly.graph_objects (only when required)
+
+---
+
+## DATA NORMALIZATION RULES (IMPORTANT)
+
+For all **100% stacked charts**:
+
+* You MUST:
+
+  1. group data appropriately
+  2. compute percentages
+  3. ensure each group sums to 100%
+
+---
+
+## DEFAULT FALLBACK
+
+If unsure:
+
+→ Use **Clustered column chart with plotly.express.bar**
+
+---
+
 ## DATA USAGE & ENCODING RULES
 
 * Use ONLY the columns available in the CSV

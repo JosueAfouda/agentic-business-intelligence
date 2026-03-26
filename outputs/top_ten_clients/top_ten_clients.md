@@ -1,7 +1,0 @@
-# Insights
-
-Les 10 clients les plus rentables affichent des chiffres d’affaires relativement proches, avec un écart limité entre le 1er et le 10e rang, ce qui suggère un groupe de tête assez homogène. Les catégories principales associées à ces clients sont dispersées entre plusieurs genres; aucune catégorie ne domine nettement cet échantillon, même si Action et Comedy apparaissent chacune deux fois. Pour chaque client, la catégorie principale ne représente qu’une partie du chiffre d’affaires total, ce qui indique que la rentabilité de ces clients ne repose pas sur un seul genre. Les données disponibles sont limitées et ne permettent pas de tirer des conclusions fortes. En particulier, l’extrait ne couvre que 10 lignes et une seule catégorie principale par client, sans vision complète de la répartition par catégories.
-
-# Recommended Actions
-
-Analyser, pour ces 10 clients, la contribution de toutes les catégories et pas seulement de la catégorie principale afin d’identifier les véritables leviers de chiffre d’affaires. Vérifier si certaines catégories reviennent de façon récurrente dans le top 2 ou top 3 des dépenses par client, car ce niveau de détail est nécessaire avant toute décision commerciale. Comparer ensuite ces 10 clients au reste de la base clients pour déterminer si leurs préférences de catégories sont spécifiques ou non. Enfin, prioriser des actions ciblées sur ces clients seulement après confirmation, par une analyse plus complète, des catégories qui contribuent le plus à leur chiffre d’affaires cumulé.
